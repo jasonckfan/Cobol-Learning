@@ -54,7 +54,7 @@
 ## 目錄結構
 
 ```
-cobol-mainframe-learning/
+Cobol-Learning/
 ├── README.md                 # 專案說明
 ├── docs/
 │   ├── lessons/              # 課程文件
@@ -75,6 +75,10 @@ cobol-mainframe-learning/
 - 銀行 IT 部門業務分析師（BA）
 - 需要與 Mainframe 團隊溝通的人員
 - 想理解核心銀行系統運作的非技術人員
+
+## GitHub Repository
+
+https://github.com/jasonckfan/Cobol-Learning
 
 ## 授權
 
