@@ -14,11 +14,11 @@
 
 ## 學習路線圖
 
-### 第 1 階段：Mainframe 系統概念入門
+### 第 1 階段：Mainframe 系統概念入門 ✅
 - [x] Lesson 1-1：Mainframe 在銀行的角色 ✅
 - [x] Lesson 1-2：Batch vs Online 處理模式 ✅
 - [x] Lesson 1-3：z/OS、Dataset、PDS、Member 概念 ✅
-- [ ] Lesson 1-4：Job、Step、Program、Procedure 關係
+- [x] Lesson 1-4：Job、Step、Program、Procedure 關係 ✅
 
 ### 第 2 階段：COBOL 程式結構與資料定義
 - [ ] Lesson 2-1：COBOL 四大 DIVISION
