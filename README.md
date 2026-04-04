@@ -26,6 +26,9 @@
 - [ ] Lesson 2-3：Level Number 與資料結構
 - [ ] Lesson 2-4：COMP、COMP-3、Packed Decimal
 - [ ] Lesson 2-5：流程控制：IF、EVALUATE、PERFORM
+- [ ] Lesson 2-6：COPYBOOK 與程式碼複用 🔜
+- [ ] Lesson 2-7：呼叫外部程式 (CALL) 🔜
+- [ ] Lesson 2-8：錯誤處理與檔案狀態碼 🔜
 
 ### 第 3 階段：檔案、批次、JCL、報表
 - [ ] Lesson 3-1：Sequential File 與 VSAM File
@@ -33,23 +36,35 @@
 - [ ] Lesson 3-3：JCL 基本結構
 - [ ] Lesson 3-4：Sort 與 Utility
 - [ ] Lesson 3-5：報表輸出流程
+- [ ] Lesson 3-6：MQ/Socket 通訊概念 🔜
+- [ ] Lesson 3-7：DB2 基本概念 🔜
+- [ ] Lesson 3-8：CICS 線上交易入門 🔜
 
 ### 第 4 階段：銀行實務案例
 - [ ] Lesson 4-1：CLM 資金池管理系統架構
 - [ ] Lesson 4-2：計息邏輯實現
 - [ ] Lesson 4-3：日終批次處理流程
 - [ ] Lesson 4-4：對帳與報表生成
+- [ ] Lesson 4-5：存款/放款系統實例 🔜
+- [ ] Lesson 4-6：跨系統資料交換 🔜
 
 ### 第 5 階段：BA 溝通與影響分析
 - [ ] Lesson 5-1：需求拆解技巧
 - [ ] Lesson 5-2：影響分析方法
 - [ ] Lesson 5-3：測試案例設計
 - [ ] Lesson 5-4：與開發人員溝通技巧
+- [ ] Lesson 5-5：技術規格書閱讀 🔜
+- [ ] Lesson 5-6：UAT 測試規劃 🔜
+- [ ] Lesson 5-7：上線檢查清單 🔜
 
 ### 第 6 階段：實戰演練
 - [ ] 真實程式碼解讀練習
 - [ ] 模擬需求會議
 - [ ] 缺陷分析練習
+
+### 第 7 階段：工具與環境 🔜
+- [ ] Lesson 7-1：常用工具介紹（TSO/ISPF、File-Aid、Coolgen）
+- [ ] Lesson 7-2：日誌與除錯概念（SYSLOG、系統 dump）
 
 ## 目錄結構
 
