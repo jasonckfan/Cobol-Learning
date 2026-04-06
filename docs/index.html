@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COBOL & Mainframe 學習指南</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">
+            <button class="menu-toggle" id="menuToggle" aria-label="切換選單">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="#" class="brand-link" onclick="showHome()">
+                <span class="brand-icon">🖥️</span>
+                <span class="brand-text">COBOL 學習指南</span>
+            </a>
+        </div>
+        <div class="nav-progress">
+            <span id="progressText">準備開始</span>
+        </div>
+    </nav>
+
+    <!-- 側邊導航 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>📚 課程目錄</h2>
+            <button class="close-sidebar" id="closeSidebar" aria-label="關閉選單">×</button>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜尋課程..." autocomplete="off">
+            <span class="search-icon">🔍</span>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebarNav">
+            <!-- 動態生成的導航內容 -->
+        </nav>
+    </aside>
+
+    <!-- 遮罩層 -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 主要內容區 -->
+    <main class="main-content" id="mainContent">
+        <!-- 首頁內容 -->
+        <div class="home-page" id="homePage">
+            <header class="hero">
+                <div class="hero-content">
+                    <h1>COBOL & Mainframe<br><span class="highlight">學習指南</span></h1>
+                    <p class="hero-subtitle">專為銀行 IT BA 設計的實務學習資源</p>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number">35+</span>
+                            <span class="stat-label">精選課程</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">18000+</span>
+                            <span class="stat-label">行內容容</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">免費開源</span>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="startLearning()">
+                            <span>🚀</span> 開始學習
+                        </button>
+                        <button class="btn btn-secondary" onclick="showRandomLesson()">
+                            <span>🎲</span> 隨機課程
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="code-preview">
+                        <pre><code class="language-cobol">IDENTIFICATION DIVISION.
+PROGRAM-ID. HELLOCOBOL.
+
+PROCEDURE DIVISION.
+    DISPLAY 'Hello, Mainframe!'
+    STOP RUN.</code></pre>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 學習路徑 -->
+            <section class="learning-path">
+                <h2>🎯 學習路徑</h2>
+                <div class="path-grid" id="pathGrid">
+                    <!-- 動態生成 -->
+                </div>
+            </section>
+
+            <!-- 快速導航 -->
+            <section class="quick-nav">
+                <h2>⚡ 快速導航</h2>
+                <div class="quick-links">
+                    <a href="#" class="quick-card" onclick="loadLesson('banking-practices-enhanced')">
+                        <span class="quick-icon">🏦</span>
+                        <span class="quick-title">銀行實務</span>
+                    </a>
+                    <a href="#" class="quick-card" onclick="loadLesson('cics-online-transaction-guide')">
+                        <span class="quick-icon">💻</span>
+                        <span class="quick-title">CICS 交易</span>
+                    </a>
+                    <a href="#" class="quick-card" onclick="loadLesson('cobol-vsam-db2-guide')">
+                        <span class="quick-icon">🗄️</span>
+                        <span class="quick-title">VSAM/DB2</span>
+                    </a>
+                    <a href="#" class="quick-card" onclick="loadLesson('cobol-debugging-techniques')">
+                        <span class="quick-icon">🐛</span>
+                        <span class="quick-title">除錯技巧</span>
+                    </a>
+                    <a href="#" class="quick-card" onclick="loadLesson('jcl-advanced-guide')">
+                        <span class="quick-icon">⚙️</span>
+                        <span class="quick-title">JCL 進階</span>
+                    </a>
+                    <a href="#" class="quick-card" onclick="loadLesson('performance-tuning-guide')">
+                        <span class="quick-icon">🚀</span>
+                        <span class="quick-title">效能調校</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- 關於 -->
+            <section class="about-section">
+                <h2>📖 關於本專案</h2>
+                <div class="about-content">
+                    <p>本專案旨在幫助銀行 IT 業務分析師（BA）建立 Mainframe 與 COBOL 相關技能：</p>
+                    <ul>
+                        <li>✅ 理解 Mainframe 系統基本概念與運作方式</li>
+                        <li>✅ 看懂基本 COBOL 程式、Copybook、JCL</li>
+                        <li>✅ 能把業務需求轉化成技術需求</li>
+                        <li>✅ 能精準與開發人員溝通</li>
+                        <li>✅ 能進行需求分析、影響分析、測試設計</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- 課程內容頁 -->
+        <div class="lesson-page" id="lessonPage" style="display: none;">
+            <div class="lesson-header">
+                <button class="back-btn" onclick="showHome()">
+                    <span>←</span> 返回首頁
+                </button>
+                <div class="lesson-nav">
+                    <button class="nav-btn" id="prevBtn" onclick="prevLesson()">
+                        <span>←</span> 上一章
+                    </button>
+                    <span class="lesson-indicator" id="lessonIndicator">1 / 35</span>
+                    <button class="nav-btn" id="nextBtn" onclick="nextLesson()">
+                        下一章 <span>→</span>
+                    </button>
+                </div>
+            </div>
+            
+            <article class="lesson-content" id="lessonContent">
+                <!-- Markdown 內容將載入這裡 -->
+            </article>
+
+            <div class="lesson-footer">
+                <div class="lesson-nav-bottom">
+                    <button class="nav-btn-large" id="prevBtnBottom" onclick="prevLesson()">
+                        <span class="nav-arrow">←</span>
+                        <div class="nav-info">
+                            <span class="nav-label">上一章</span>
+                            <span class="nav-title" id="prevTitle">--</span>
+                        </div>
+                    </button>
+                    <button class="nav-btn-large" id="nextBtnBottom" onclick="nextLesson()">
+                        <div class="nav-info">
+                            <span class="nav-label">下一章</span>
+                            <span class="nav-title" id="nextTitle">--</span>
+                        </div>
+                        <span class="nav-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 回到頂部按鈕 -->
+    <button class="back-to-top" id="backToTop" onclick="scrollToTop()" aria-label="回到頂部">
+        <span>↑</span>
+    </button>
+
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>COBOL & Mainframe 學習指南</p>
+            <p>Made with ❤️ for Bank IT BAs</p>
+            <p class="footer-links">
+                <a href="https://github.com/jasonckfan/Cobol-Learning" target="_blank">GitHub</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="assets/app.js"></script>
+</body>
+</html>
