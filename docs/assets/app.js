@@ -205,9 +205,8 @@ async function loadLesson(lessonId) {
     contentDiv.innerHTML = '<div class="loading"></div>';
     
     try {
-        // 嘗試從 GitHub raw 載入
-        const rawUrl = `https://raw.githubusercontent.com/jasonckfan/Cobol-Learning/main/${lesson.file.replace('../', '')}`;
-        const response = await fetch(rawUrl);
+        // 直接從相對路徑載入（支援 GitHub Pages）
+        const response = await fetch(lesson.file);
         
         if (!response.ok) {
             throw new Error('Failed to load lesson');
