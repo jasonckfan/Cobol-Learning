@@ -286,7 +286,7 @@
 
 ## 📖 參考資料
 
-- [術語表 (Glossary)](references/glossary.md)
+- [術語表 (Glossary)](../references/glossary.md)
 - [BA 溝通指南](ba-communication-guide.md)
 - [銀行實務增強篇](banking-practices-enhanced.md)
 
