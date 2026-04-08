@@ -57,14 +57,23 @@
 - [x] Lesson 5-6：UAT 測試規劃 ✅
 - [x] Lesson 5-7：上線檢查清單 ✅
 
-### 第 6 階段：實戰演練
+### 第 6 階段：CLM 專題進階 ✅
+基於 CLM (Cash and Liquidity Management) 功能說明書的實務教學
+
+- [x] Lesson 6-1：CLM 利息計算引擎剖析 (Tier/Slab/Hybrid) ✅
+- [x] Lesson 6-2：CLM 利率覆蓋機制 (Pricing Override) ✅
+- [ ] Lesson 6-3：CLM 批次重啟與容錯機制
+- [ ] Lesson 6-4：CLM 多貨幣處理 (MCN)
+- [ ] Lesson 6-5：CLM 監管報表生成
+
+### 第 7 階段：實戰演練
 - [ ] 真實程式碼解讀練習
 - [ ] 模擬需求會議
 - [ ] 缺陷分析練習
 
-### 第 7 階段：工具與環境 🔜
-- [ ] Lesson 7-1：常用工具介紹（TSO/ISPF、File-Aid、Coolgen）
-- [ ] Lesson 7-2：日誌與除錯概念（SYSLOG、系統 dump）
+### 第 8 階段：工具與環境 🔜
+- [ ] Lesson 8-1：常用工具介紹（TSO/ISPF、File-Aid、Coolgen）
+- [ ] Lesson 8-2：日誌與除錯概念（SYSLOG、系統 dump）
 
 ## 目錄結構
 
