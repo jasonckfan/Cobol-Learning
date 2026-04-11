@@ -69,7 +69,7 @@
 - [x] Lesson 6-1：CLM 利息計算引擎剖析 (Tier/Slab/Hybrid) ✅
 - [x] Lesson 6-2：CLM 利率覆蓋機制 (Pricing Override) ✅
 - [x] Lesson 6-3：CLM 批次重啟與容錯機制 ✅
-- [ ] Lesson 6-4：CLM 多貨幣處理 (MCN)
+- [x] Lesson 6-4：CLM 多貨幣處理 (MCN) ✅
 - [ ] Lesson 6-5：CLM 監管報表生成
 
 ### 第 7 階段：實戰演練
