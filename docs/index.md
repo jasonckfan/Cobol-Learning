@@ -44,14 +44,14 @@
 
 ### 第 2 階段：COBOL 程式結構與資料定義
 
-#### [Lesson 2-1：COBOL 四大 DIVISION](lessons/lesson-2-1-cobol-divisions.md)
+#### [Lesson 2-1：COBOL 四大 DIVISION](lessons/lesson-2-1-cobol-divisions.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| IDENTIFICATION DIVISION | 程式識別資訊 |
-| ENVIRONMENT DIVISION | 環境設定 |
-| DATA DIVISION | 資料定義 |
-| PROCEDURE DIVISION | 程式邏輯 |
+| [IDENTIFICATION DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 程式識別資訊 |
+| [ENVIRONMENT DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 環境設定 |
+| [DATA DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 資料定義 |
+| [PROCEDURE DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 程式邏輯 |
 
 #### [Lesson 2-2：變數宣告與 PIC 子句](lessons/lesson-2-2-pic-clause.md)
 
