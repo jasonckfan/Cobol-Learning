@@ -298,12 +298,13 @@
 | 息差計算邏輯 | 匯率換算與分配 |
 | BA 分析重點 | 需求檢查清單 |
 
-#### Lesson 6-5：CLM 監管報表生成 ⬜
+#### [Lesson 6-5：CLM 監管報表生成](lessons/lesson-6-5-clm-regulatory-reports.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| 監管報表類型 | 法定報表需求 |
-| 報表生成流程 | 資料彙整與輸出 |
+| [監管報表類型](lessons/lesson-6-5-clm-regulatory-reports.md#) | LCR、NSFR、存款統計 |
+| [報表生成流程](lessons/lesson-6-5-clm-regulatory-reports.md#) | 資料彙整、驗證機制 |
+| [BA 實務指南](lessons/lesson-6-5-clm-regulatory-reports.md#) | 需求檢查清單、測試設計 |
 
 ---
 
@@ -337,9 +338,9 @@
 ## 📊 學習進度
 
 ```
-已完成：21 / 28 課程 (75%)
+已完成：22 / 28 課程 (79%)
 
-██████████████████████████░░░░░░░░░░ 75%
+███████████████████████████░░░░░░░░░ 79%
 ```
 
 ---
