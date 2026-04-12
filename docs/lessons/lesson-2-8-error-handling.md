@@ -1,515 +1,457 @@
-# Lesson 2-8：錯誤處理與檔案狀態碼
+# Lesson 2-8: 錯誤處理與檔案狀態碼
+
+> 理解 COBOL 的錯誤處理機制與檔案操作狀態
+
+---
 
 ## 學習目標
 
-- 理解 COBOL 的錯誤處理機制
-- 掌握 FILE STATUS 狀態碼的意義
-- 能夠設計健壯的錯誤處理邏輯
+- 理解 FILE STATUS 的概念與用途
+- 掌握常見的檔案狀態碼及其意義
+- 學會設計錯誤處理邏輯
+- 了解 BA 在分析錯誤處理時的關注點
 
 ---
 
-## 為什麼錯誤處理很重要？
+## 一、FILE STATUS 基礎
 
-在銀行系統中：
-- 檔案可能不存在或權限不足
-- 資料可能格式錯誤或損壞
-- 系統資源可能耗盡
-- 網路連線可能中斷
+### 1.1 什麼是 FILE STATUS？
 
-**沒有適當的錯誤處理，小問題可能變成大災難！**
+FILE STATUS 是 COBOL 中用於追蹤檔案操作結果的欄位。每次檔案操作 (OPEN, READ, WRITE 等) 後，系統會將結果碼存入 FILE STATUS 欄位，程式可以根據此碼判斷操作是否成功。
 
----
-
-## FILE STATUS 狀態碼
-
-### 定義方式
-
-在 ENVIRONMENT DIVISION 中定義：
-
-```cobol
-       FILE-CONTROL.
-           SELECT ACCT-FILE ASSIGN TO ACCTDATA
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-ACCT-STATUS.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              FILE STATUS 概念圖                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   程式操作          系統回應          FILE STATUS               │
+│   ────────          ────────          ───────────               │
+│                                                                 │
+│   OPEN FILE    -->  檔案開啟成功  -->  '00'                     │
+│   READ FILE    -->  讀取成功      -->  '00'                     │
+│   READ FILE    -->  檔案結束      -->  '10'                     │
+│   WRITE FILE   -->  寫入成功      -->  '00'                     │
+│   OPEN FILE    -->  檔案不存在    -->  '35'                     │
+│                                                                 │
+│   程式邏輯：                                                    │
+│   READ INPUT-FILE                                               │
+│   IF WS-FILE-STATUS = '00'                                      │
+│       處理正常讀取的記錄                                        │
+│   ELSE IF WS-FILE-STATUS = '10'                                 │
+│       處理檔案結束                                              │
+│   ELSE                                                          │
+│       處理錯誤                                                  │
+│   END-IF                                                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 狀態碼格式
-
-FILE STATUS 是 2 碼的變數：
+### 1.2 FILE STATUS 宣告
 
 ```cobol
-       01 WS-ACCT-STATUS     PIC XX.
-```
-
----
-
-## 常見 FILE STATUS 狀態碼
-
-### 成功狀態
-
-| 狀態碼 | 意義 |
-|--------|------|
-| 00 | 操作成功 |
-| 04 | 讀取成功，但記錄長度不符 |
-| 05 | OPEN 成功，檔案是可選的且不存在 |
-
-### 檔案結束
-
-| 狀態碼 | 意義 |
-|--------|------|
-| 10 | 已到達檔案結尾（EOF） |
-
-### 鍵值錯誤（VSAM/索引檔）
-
-| 狀態碼 | 意義 |
-|--------|------|
-| 21 | 鍵值順序錯誤 |
-| 22 | 鍵值重複 |
-| 23 | 找不到記錄 |
-
-### 資料錯誤
-
-| 狀態碼 | 意義 |
-|--------|------|
-| 30 | 永久性錯誤（其他原因） |
-| 34 | 寫入失敗（磁碟空間不足） |
-| 35 | OPEN 失失敗（檔案不存在） |
-| 37 | OPEN 失失敗（權限不符） |
-| 38 | OPEN 失失敗（檔案已鎖定） |
-| 39 | OPEN 失失敗（屬性不符） |
-| 41 | 嘗試 OPEN 已開啟的檔案 |
-| 42 | 嘗試 CLOSE 未開啟的檔案 |
-| 43 | 檔案未開啟時嘗試讀寫 |
-| 44 | 記錄長度不符 |
-| 46 | 嘗試讀取未執行 START 的檔案 |
-| 47 | 嘗試讀取未開啟為 INPUT 的檔案 |
-| 48 | 嘗試寫入未開啟為 OUTPUT 的檔案 |
-| 49 | 嘗試寫入未開啟為 I-O 的檔案 |
-
-### I/O 錯誤
-
-| 狀態碼 | 意義 |
-|--------|------|
-| 90 | 檔案鎖定 |
-| 91 | 檔案被其他程式鎖定 |
-| 92 | 邏輯錯誤 |
-| 93 | 資源不可用 |
-| 94 | 記錄被鎖定 |
-| 95 | 檔案資訊無效 |
-| 96 | 無可用記憶體 |
-| 97 | 檔案屬性錯誤 |
-| 98 | 檔案已存在 |
-| 99 | 記錄鎖定失敗 |
-
----
-
-## 錯誤處理範例
-
-### 基本 OPEN 錯誤處理
-
-```cobol
-       1000-INIT.
-           OPEN INPUT ACCT-FILE
-           IF WS-ACCT-STATUS NOT = '00'
-               EVALUATE WS-ACCT-STATUS
-                   WHEN '35'
-                       DISPLAY 'ERROR: 檔案不存在'
-                   WHEN '37'
-                       DISPLAY 'ERROR: 權限不足'
-                   WHEN OTHER
-                       DISPLAY 'ERROR: 無法開啟檔案 - ' WS-ACCT-STATUS
-               END-EVALUATE
-               STOP RUN
-           END-IF.
-```
-
-### 讀取檔案錯誤處理
-
-```cobol
-       2000-READ-FILE.
-           READ ACCT-FILE
-               AT END
-                   SET EOF-REACHED TO TRUE
-               NOT AT END
-                   IF WS-ACCT-STATUS NOT = '00'
-                       DISPLAY 'READ ERROR: ' WS-ACCT-STATUS
-                       PERFORM 8000-LOG-ERROR
-                   ELSE
-                       ADD 1 TO WS-READ-COUNT
-                   END-IF
-           END-READ.
-```
-
-### 寫入檔案錯誤處理
-
-```cobol
-       3000-WRITE-FILE.
-           WRITE RPT-RECORD
-           IF WS-RPT-STATUS NOT = '00'
-               EVALUATE WS-RPT-STATUS
-                   WHEN '34'
-                       DISPLAY 'ERROR: 磁碟空間不足'
-                   WHEN OTHER
-                       DISPLAY 'WRITE ERROR: ' WS-RPT-STATUS
-               END-EVALUATE
-               PERFORM 8000-LOG-ERROR
-           END-IF.
-```
-
----
-
-## DECLARATIVES（宣告區）
-
-COBOL 提供 DECLARATIVES 區塊，用於自動處理檔案錯誤。
-
-### 語法
-
-```cobol
-       PROCEDURE DIVISION.
-       DECLARATIVES.
-       段落名稱 SECTION.
-           USE AFTER ERROR PROCEDURE ON 檔案名稱.
-           錯誤處理敘述
-       END DECLARATIVES.
-```
-
-### 範例
-
-```cobol
-       PROCEDURE DIVISION.
-       DECLARATIVES.
-       ACCT-ERROR SECTION.
-           USE AFTER ERROR PROCEDURE ON ACCT-FILE.
-           DISPLAY 'FILE I/O ERROR ON ACCT-FILE: ' WS-ACCT-STATUS
-           PERFORM 8000-LOG-ERROR.
-       RPT-ERROR SECTION.
-           USE AFTER ERROR PROCEDURE ON RPT-FILE.
-           DISPLAY 'FILE I/O ERROR ON RPT-FILE: ' WS-RPT-STATUS
-           PERFORM 8000-LOG-ERROR.
-       END DECLARATIVES.
-
-       0000-MAIN.
-           PERFORM 1000-INIT
-           PERFORM 2000-PROCESS UNTIL EOF-REACHED
-           PERFORM 9000-TERM
-           STOP RUN.
-```
-
-> 💡 **優點**：集中處理所有檔案錯誤，不必在每次 I/O 操作後檢查。
-
----
-
-## 完整錯誤處理範例
-
-```cobol
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. ACCTPROC.
-
+       *---- FILE STATUS 宣告範例 ---------------------------------
+       
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT ACCT-FILE ASSIGN TO ACCTDATA
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-ACCT-STATUS.
-           SELECT RPT-FILE ASSIGN TO ACCTRPT
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-RPT-STATUS.
-           SELECT ERR-FILE ASSIGN TO ERRLOG
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-ERR-STATUS.
-
+           SELECT CUSTOMER-FILE
+               ASSIGN TO 'CUSTFILE'
+               FILE STATUS IS WS-CUST-STATUS.    *> 指定狀態欄位
+       
        DATA DIVISION.
        FILE SECTION.
-       FD ACCT-FILE.
-       01 ACCT-RECORD.
-          05 ACCT-NO           PIC X(16).
-          05 ACCT-BALANCE      PIC S9(9)V99.
-
-       FD RPT-FILE.
-       01 RPT-RECORD           PIC X(80).
-
-       FD ERR-FILE.
-       01 ERR-RECORD           PIC X(120).
-
+       FD  CUSTOMER-FILE.
+       01  CUSTOMER-RECORD.
+           05  ...
+       
        WORKING-STORAGE SECTION.
-       01 WS-FILE-STATUS.
-          05 WS-ACCT-STATUS    PIC XX.
-          05 WS-RPT-STATUS     PIC XX.
-          05 WS-ERR-STATUS     PIC XX.
+       * FILE STATUS 欄位 (必須是 2 字元的英數欄位)
+       01  WS-CUST-STATUS      PIC X(2).
+       
+       * 細分的狀態碼 (可選)
+       01  WS-STATUS-CODES.
+           05  WS-STAT-SUCCESS    PIC X(2) VALUE '00'.
+           05  WS-STAT-EOF        PIC X(2) VALUE '10'.
+           05  STAT-EOF           PIC X(2) VALUE '10'.
+               88  END-OF-FILE    VALUE '10'.
+```
 
-       01 WS-FLAGS.
-          05 WS-EOF-FLAG       PIC X VALUE 'N'.
-             88 EOF-REACHED    VALUE 'Y'.
-          05 WS-ERROR-FLAG     PIC X VALUE 'N'.
-             88 ERROR-FOUND    VALUE 'Y'.
+---
 
-       01 WS-COUNTERS.
-          05 WS-READ-CNT       PIC 9(8) VALUE 0.
-          05 WS-WRITE-CNT      PIC 9(8) VALUE 0.
-          05 WS-ERROR-CNT      PIC 9(5) VALUE 0.
+## 二、常見 FILE STATUS 碼
 
-       01 ERR-MSG.
-          05 ERR-TIMESTAMP     PIC X(20).
-          05 ERR-PROGRAM       PIC X(8) VALUE 'ACCTPROC'.
-          05 ERR-LOCATION      PIC X(20).
-          05 ERR-CODE          PIC XX.
-          05 ERR-DESCRIPTION   PIC X(50).
-          05 ERR-DATA          PIC X(20).
+### 2.1 成功狀態碼
 
+| 狀態碼 | 意義 | 說明 |
+|--------|------|------|
+| **00** | 成功 | 操作成功完成 |
+| **02** | 成功但有重複 | WRITE 時發現重複 Key (索引檔) |
+| **04** | 成功但記錄長度不符 | READ 時記錄長度與預期不同 |
+| **05** | 成功但檔案已存在 | OPEN OUTPUT 時檔案已存在 |
+
+### 2.2 檔案結束狀態碼
+
+| 狀態碼 | 意義 | 說明 |
+|--------|------|------|
+| **10** | 檔案結束 (EOF) | 循序讀取到檔案結尾 |
+
+### 2.3 錯誤狀態碼
+
+| 狀態碼 | 意義 | 說明 | 常見原因 |
+|--------|------|------|----------|
+| **22** | 重複 Key | 寫入時 Key 已存在 | 索引檔寫入重複 |
+| **23** | 記錄不存在 | 讀取時找不到 Key | Key 值錯誤 |
+| **30** | 永久錯誤 | I/O 錯誤 | 硬體故障 |
+| **34** | 檔案空間不足 | 寫入時空間不夠 | 磁碟滿了 |
+| **35** | 檔案不存在 | OPEN 時找不到檔案 | 檔名錯誤或檔案遺失 |
+| **37** | 檔案權限錯誤 | 無權限存取 | 權限不足 |
+| **39** | 檔案屬性衝突 | OPEN 時屬性不符 | 組織方式不符 |
+| **41** | 檔案已開啟 | 重複 OPEN | 邏輯錯誤 |
+| **42** | 檔案未開啟 | 操作前未 OPEN | 邏輯錯誤 |
+| **43** | 檔案已關閉 | 重複 CLOSE | 邏輯錯誤 |
+| **46** | 讀取順序錯誤 | 循序讀取順序錯誤 | 程式邏輯錯誤 |
+| **47** | 讀取未成功 | 嘗試讀取失敗的記錄 | 邏輯錯誤 |
+| **48** | 寫入未成功 | 嘗試寫入失敗的記錄 | 邏輯錯誤 |
+| **49** | 刪除/改寫錯誤 | 操作失敗 | 權限或狀態錯誤 |
+
+---
+
+## 三、檔案操作與錯誤處理
+
+### 3.1 標準檔案處理模式
+
+```cobol
+       *---- 標準檔案處理模式 -------------------------------------
+       
+       WORKING-STORAGE SECTION.
+       01  WS-FILE-STATUS      PIC X(2).
+           88  WS-FILE-OK      VALUE '00'.
+           88  WS-FILE-EOF     VALUE '10'.
+           88  WS-FILE-ERROR   VALUE '30' '34' '35' '37' '39'.
+       
+       01  WS-EOF-FLAG         PIC X VALUE 'N'.
+           88  WS-EOF-YES      VALUE 'Y'.
+           88  WS-EOF-NO       VALUE 'N'.
+       
        PROCEDURE DIVISION.
-       DECLARATIVES.
-       ACCT-ERROR SECTION.
-           USE AFTER ERROR PROCEDURE ON ACCT-FILE.
-           MOVE 'ACCT-FILE I/O ERROR' TO ERR-LOCATION
-           MOVE WS-ACCT-STATUS TO ERR-CODE
-           PERFORM 8000-LOG-ERROR.
-       RPT-ERROR SECTION.
-           USE AFTER ERROR PROCEDURE ON RPT-FILE.
-           MOVE 'RPT-FILE I/O ERROR' TO ERR-LOCATION
-           MOVE WS-RPT-STATUS TO ERR-CODE
-           PERFORM 8000-LOG-ERROR.
-       END DECLARATIVES.
-
        0000-MAIN.
-           PERFORM 1000-INIT
-           IF NOT ERROR-FOUND
-               PERFORM 2000-PROCESS UNTIL EOF-REACHED OR ERROR-FOUND
+           PERFORM 1000-OPEN-FILES
+           IF WS-FILE-OK
+               PERFORM 2000-PROCESS-FILE
+               PERFORM 3000-CLOSE-FILES
            END-IF
-           PERFORM 9000-TERM
            STOP RUN.
-
-       1000-INIT.
-           OPEN INPUT ACCT-FILE
-           IF WS-ACCT-STATUS NOT = '00' AND WS-ACCT-STATUS NOT = '05'
-               MOVE 'OPEN ACCT-FILE' TO ERR-LOCATION
-               MOVE WS-ACCT-STATUS TO ERR-CODE
-               PERFORM 8000-LOG-ERROR
-               SET ERROR-FOUND TO TRUE
-           END-IF
-
-           IF NOT ERROR-FOUND
-               OPEN OUTPUT RPT-FILE
-               IF WS-RPT-STATUS NOT = '00'
-                   MOVE 'OPEN RPT-FILE' TO ERR-LOCATION
-                   MOVE WS-RPT-STATUS TO ERR-CODE
-                   PERFORM 8000-LOG-ERROR
-                   SET ERROR-FOUND TO TRUE
-               END-IF
-           END-IF
-
-           IF NOT ERROR-FOUND
-               OPEN OUTPUT ERR-FILE
-               PERFORM 1100-READ-FIRST
-           END-IF.
-
-       1100-READ-FIRST.
-           READ ACCT-FILE
-               AT END SET EOF-REACHED TO TRUE
-               NOT AT END ADD 1 TO WS-READ-CNT
-           END-READ
-           IF WS-ACCT-STATUS NOT = '00' AND WS-ACCT-STATUS NOT = '10'
-               MOVE 'READ ACCT-FILE' TO ERR-LOCATION
-               MOVE WS-ACCT-STATUS TO ERR-CODE
-               PERFORM 8000-LOG-ERROR
-           END-IF.
-
-       2000-PROCESS.
-           PERFORM 2100-VALIDATE
-           IF NOT ERROR-FOUND
-               PERFORM 2200-CALCULATE
-               PERFORM 2300-WRITE-REPORT
-           END-IF
-           PERFORM 2400-READ-NEXT.
-
-       2100-VALIDATE.
-           IF ACCT-NO = SPACES
-               MOVE 'VALIDATE' TO ERR-LOCATION
-               MOVE 'E1' TO ERR-CODE
-               MOVE '空白帳號' TO ERR-DESCRIPTION
-               PERFORM 8000-LOG-ERROR
-           END-IF.
-
-       2200-CALCULATE.
-           *> 計算邏輯...
-
-       2300-WRITE-REPORT.
-           WRITE RPT-RECORD
-           IF WS-RPT-STATUS = '00'
-               ADD 1 TO WS-WRITE-CNT
+       
+       *---- 開檔 -------------------------------------------------
+       1000-OPEN-FILES.
+           OPEN INPUT CUSTOMER-FILE
+           
+           EVALUATE WS-FILE-STATUS
+               WHEN '00'
+                   DISPLAY 'File opened successfully'
+               WHEN '35'
+                   DISPLAY 'ERROR: File not found'
+                   MOVE 'Y' TO WS-EOF-FLAG
+               WHEN '37'
+                   DISPLAY 'ERROR: Permission denied'
+                   MOVE 'Y' TO WS-EOF-FLAG
+               WHEN OTHER
+                   DISPLAY 'ERROR: Open failed, Status: ' 
+                           WS-FILE-STATUS
+                   MOVE 'Y' TO WS-EOF-FLAG
+           END-EVALUATE.
+       
+       *---- 處理檔案 ---------------------------------------------
+       2000-PROCESS-FILE.
+           PERFORM UNTIL WS-EOF-YES
+               READ CUSTOMER-FILE
+                   AT END
+                       MOVE 'Y' TO WS-EOF-YES
+                   NOT AT END
+                       PERFORM 2100-PROCESS-RECORD
+               END-READ
+           END-PERFORM.
+       
+       2100-PROCESS-RECORD.
+           * 處理單筆記錄
+           IF WS-FILE-STATUS = '00'
+               * 正常處理
+               ADD 1 TO WS-READ-COUNT
            ELSE
-               MOVE 'WRITE RPT-FILE' TO ERR-LOCATION
-               MOVE WS-RPT-STATUS TO ERR-CODE
-               PERFORM 8000-LOG-ERROR
+               * 讀取錯誤處理
+               DISPLAY 'Read error: ' WS-FILE-STATUS
+               ADD 1 TO WS-ERROR-COUNT
            END-IF.
-
-       2400-READ-NEXT.
-           READ ACCT-FILE
-               AT END SET EOF-REACHED TO TRUE
-               NOT AT END ADD 1 TO WS-READ-CNT
-           END-READ.
-
-       8000-LOG-ERROR.
-           SET ERROR-FOUND TO TRUE
-           ADD 1 TO WS-ERROR-CNT
-           MOVE FUNCTION CURRENT-DATE TO ERR-TIMESTAMP
-           WRITE ERR-RECORD FROM ERR-MSG
-           DISPLAY 'ERROR: ' ERR-LOCATION ' - ' ERR-CODE.
-
-       9000-TERM.
-           CLOSE ACCT-FILE
-           CLOSE RPT-FILE
-           CLOSE ERR-FILE
-           DISPLAY '=============================='
-           DISPLAY '讀取筆數: ' WS-READ-CNT
-           DISPLAY '寫入筆數: ' WS-WRITE-CNT
-           DISPLAY '錯誤筆數: ' WS-ERROR-CNT
-           DISPLAY '=============================='.
+       
+       *---- 關檔 -------------------------------------------------
+       3000-CLOSE-FILES.
+           CLOSE CUSTOMER-FILE.
+           
+           IF WS-FILE-STATUS NOT = '00' AND WS-FILE-STATUS NOT = '42'
+               DISPLAY 'WARNING: Close error: ' WS-FILE-STATUS
+           END-IF.
 ```
 
----
-
-## RETURN CODE
-
-程式結束時可以設定返回碼，讓呼叫方（如 JCL）知道執行狀態。
-
-### 設定 RETURN CODE
+### 3.2 錯誤處理副程式
 
 ```cobol
-       MOVE 0 TO RETURN-CODE.        *> 成功
-       MOVE 4 TO RETURN-CODE.        *> 警告
-       MOVE 8 TO RETURN-CODE.        *> 錯誤
-       MOVE 12 TO RETURN-CODE.       *> 嚴重錯誤
-       MOVE 16 TO RETURN-CODE.       *> 系統錯誤
+       *---- 錯誤處理副程式 ---------------------------------------
+       
+       9000-ERROR-HANDLER.
+           EVALUATE WS-FILE-STATUS
+               WHEN '00'
+                   MOVE 'Success' TO WS-ERROR-MSG
+               WHEN '02'
+                   MOVE 'Duplicate key' TO WS-ERROR-MSG
+               WHEN '10'
+                   MOVE 'End of file' TO WS-ERROR-MSG
+               WHEN '22'
+                   MOVE 'Duplicate key error' TO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+               WHEN '23'
+                   MOVE 'Record not found' TO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+               WHEN '30'
+                   MOVE 'Permanent I/O error' TO WS-ERROR-MSG
+                   PERFORM 9200-ABORT-JOB
+               WHEN '34'
+                   MOVE 'Disk full' TO WS-ERROR-MSG
+                   PERFORM 9200-ABORT-JOB
+               WHEN '35'
+                   MOVE 'File not found' TO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+               WHEN '37'
+                   MOVE 'Permission denied' TO WS-ERROR-MSG
+                   PERFORM 9200-ABORT-JOB
+               WHEN '41'
+                   MOVE 'File already open' TO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+               WHEN '42'
+                   MOVE 'File not open' TO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+               WHEN OTHER
+                   STRING 'Unknown error: ' WS-FILE-STATUS
+                       DELIMITED BY SIZE
+                       INTO WS-ERROR-MSG
+                   PERFORM 9100-LOG-ERROR
+           END-EVALUATE.
+       
+       9100-LOG-ERROR.
+           WRITE ERROR-RECORD FROM WS-ERROR-LOG.
+           ADD 1 TO WS-ERROR-COUNT.
+       
+       9200-ABORT-JOB.
+           DISPLAY 'CRITICAL ERROR: ' WS-ERROR-MSG
+           DISPLAY 'Job aborted'
+           MOVE 9999 TO RETURN-CODE
+           STOP RUN.
 ```
-
-### 銀行慣例
-
-| Return Code | 意義 | JCL 處理 |
-|-------------|------|----------|
-| 0 | 正常完成 | 繼續下一步 |
-| 4 | 完成但有警告 | 通常繼續 |
-| 8 | 錯誤，部分處理 | 可能中止 |
-| 12 | 嚴重錯誤 | 中止 Job |
-| 16 | 系統錯誤 | 立即中止 |
 
 ---
 
-## BA 實務應用
+## 四、進階錯誤處理
 
-### 如何判斷程式是否成功執行？
+### 4.1 DECLARATIVES (宣告式錯誤處理)
 
-1. **查看 JCL 的返回碼**：RC=0 表示成功
-2. **檢查錯誤日誌**：查看 ERR-FILE 或 SYSOUT
-3. **確認處理筆數**：比對預期與實際數量
+DECLARATIVES 允許在檔案操作發生錯誤時自動執行指定的錯誤處理程式碼。
 
-### 需求分析時的關鍵問題
+```cobol
+       *---- DECLARATIVES 範例 ------------------------------------
+       
+       PROCEDURE DIVISION.
+       
+       DECLARATIVES.
+       ERROR-HANDLER SECTION.
+           USE AFTER ERROR ON CUSTOMER-FILE.
+       0000-ERROR-ROUTINE.
+           DISPLAY 'FILE ERROR OCCURRED'
+           DISPLAY 'FILE STATUS: ' WS-FILE-STATUS
+           DISPLAY 'RECORD: ' CUSTOMER-RECORD
+           ADD 1 TO WS-ERROR-COUNT
+           IF WS-ERROR-COUNT > 10
+               DISPLAY 'TOO MANY ERRORS, ABORTING'
+               STOP RUN
+           END-IF.
+       END DECLARATIVES.
+       
+       * 主程式邏輯
+       0000-MAIN.
+           OPEN INPUT CUSTOMER-FILE.
+           PERFORM UNTIL WS-EOF
+               READ CUSTOMER-FILE
+                   AT END
+                       MOVE 'Y' TO WS-EOF
+               END-READ
+               * 如果發生錯誤，會自動執行 DECLARATIVES
+           END-PERFORM.
+```
 
-| 情境 | 應該問的問題 |
+### 4.2 EXCEPTION/ERROR 處理
+
+```cobol
+       *---- 使用 EXCEPTION/ERROR 子句 ----------------------------
+       
+       * OPEN 錯誤處理
+       OPEN INPUT CUSTOMER-FILE
+           WITH NO REWIND
+           ON EXCEPTION
+               DISPLAY 'Cannot open file'
+               PERFORM ERROR-ROUTINE
+           NOT ON EXCEPTION
+               DISPLAY 'File opened successfully'
+       END-OPEN.
+       
+       * READ 錯誤處理 (VSAM 檔案)
+       READ CUSTOMER-FILE
+           KEY IS WS-SEARCH-KEY
+           INVALID KEY
+               DISPLAY 'Record not found'
+               PERFORM NOT-FOUND-ROUTINE
+           NOT INVALID KEY
+               PERFORM PROCESS-RECORD
+       END-READ.
+       
+       * WRITE 錯誤處理
+       WRITE CUSTOMER-RECORD
+           INVALID KEY
+               DISPLAY 'Duplicate key'
+               PERFORM DUP-KEY-ROUTINE
+       END-WRITE.
+```
+
+---
+
+## 五、BA 實務指南
+
+### 5.1 錯誤處理檢查清單
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              錯誤處理檢查清單                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  □ 檔案操作                                                     │
+│    ├── 每個 OPEN 都有錯誤檢查？                                 │
+│    ├── READ 是否處理 AT END？                                   │
+│    ├── WRITE 是否處理 INVALID KEY？                             │
+│    └── CLOSE 是否有錯誤檢查？                                   │
+│                                                                 │
+│  □ FILE STATUS                                                  │
+│    ├── 是否宣告了 FILE STATUS 欄位？                            │
+│    ├── 是否檢查了所有可能的狀態碼？                             │
+│    ├── 是否有 88 層級條件名稱簡化判斷？                         │
+│    └── 錯誤狀態是否有對應處理？                                 │
+│                                                                 │
+│  □ 錯誤處理邏輯                                                 │
+│    ├── 錯誤是否被記錄？                                         │
+│    ├── 嚴重錯誤是否中止程式？                                   │
+│    ├── 是否有錯誤計數統計？                                     │
+│    └── 錯誤訊息是否清楚？                                       │
+│                                                                 │
+│  □ 測試考量                                                     │
+│    ├── 是否測試了檔案不存在情境？                               │
+│    ├── 是否測試了權限不足情境？                                 │
+│    ├── 是否測試了空間不足情境？                                 │
+│    └── 是否測試了重複 Key 情境？                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 常見錯誤與預防
+
+| 錯誤 | 原因 | 預防措施 |
+|------|------|----------|
+| 檔案未找到 (35) | 檔名錯誤或檔案未建立 | 開檔前檢查，或建立空檔案 |
+| 權限不足 (37) | 使用者權限不夠 | 確認權限設定，使用正確使用者 |
+| 空間不足 (34) | 磁碟滿了 | 監控磁碟空間，設定警示 |
+| 重複 Key (22) | 寫入重複資料 | 寫入前檢查，或更新而非新增 |
+| 記錄不存在 (23) | 讀取不存在的 Key | 讀取前確認，或使用 INVALID KEY |
+| 檔案未開啟 (42) | 操作前未 OPEN | 確認程式流程順序 |
+
+---
+
+## 六、練習題
+
+### 練習 1: FILE STATUS 判斷
+
+給定以下情境，請選擇正確的 FILE STATUS 碼：
+
+| 情境 | FILE STATUS |
 |------|-------------|
-| 檔案處理 | 「如果檔案不存在，程式應該怎麼處理？」 |
-| 資料錯誤 | 「遇到錯誤記錄要跳過還是中止？」 |
-| 部分失敗 | 「部分成功時要如何通知？」 |
-| 重試機制 | 「是否需要自動重試？」 |
+| 循序讀取到檔案結尾 | |
+| OPEN 時檔案不存在 | |
+| 寫入時磁碟空間不足 | |
+| 讀取時找不到指定 Key | |
+| 操作成功完成 | |
 
-### 錯誤處理設計考量
+### 練習 2: 錯誤處理設計
 
+為以下程式碼補充錯誤處理：
+
+```cobol
+       OPEN INPUT ACCOUNT-FILE.
+       
+       PERFORM UNTIL WS-EOF
+           READ ACCOUNT-FILE
+               AT END
+                   MOVE 'Y' TO WS-EOF
+           END-READ
+           * 請補充：檢查 FILE STATUS 並處理錯誤
+           
+           PERFORM PROCESS-RECORD
+       END-PERFORM.
+       
+       CLOSE ACCOUNT-FILE.
 ```
-需求：處理帳戶批次檔案
 
-問題：
-1. 檔案不存在怎麼辦？
-2. 某些記錄格式錯誤怎麼辦？
-3. 寫入報表失敗怎麼辦？
-4. 磁碟空間不足怎麼辦？
+### 練習 3: 錯誤處理分析
 
-決策：
-- 檔案不存在 → 記錄錯誤，RC=12，中止
-- 記錄格式錯誤 → 記錄錯誤，跳過該筆，繼續處理
-- 報表寫入失敗 → 記錄錯誤，RC=8，繼續嘗試處理
-- 磁碟空間不足 → 記錄錯誤，RC=12，中止
+分析以下程式碼的錯誤處理問題：
+
+```cobol
+       OPEN INPUT CUSTOMER-FILE.
+       OPEN OUTPUT REPORT-FILE.
+       
+       READ CUSTOMER-FILE.
+       PERFORM UNTIL WS-EOF
+           WRITE REPORT-RECORD FROM CUSTOMER-RECORD
+           READ CUSTOMER-FILE
+               AT END
+                   MOVE 'Y' TO WS-EOF
+           END-READ
+       END-PERFORM.
+       
+       CLOSE CUSTOMER-FILE.
+       CLOSE REPORT-FILE.
 ```
+
+**問題**：
+1. 這個程式碼有哪些錯誤處理問題？
+2. 如何改進？
 
 ---
 
-## 常見錯誤與解決
+## 七、總結
 
-### 錯誤 1：忽略 FILE STATUS
+### 本課程重點回顧
 
-```cobol
-       *> 錯誤：沒有定義 FILE STATUS
-       SELECT ACCT-FILE ASSIGN TO ACCTDATA.
+✅ **FILE STATUS**: 2 字元欄位，追蹤檔案操作結果
 
-       *> 正確：定義 FILE STATUS
-       SELECT ACCT-FILE ASSIGN TO ACCTDATA
-           FILE STATUS IS WS-ACCT-STATUS.
-```
+✅ **成功碼**: '00' 成功, '02' 有重複, '10' 檔案結束
 
-### 錯誤 2：沒有檢查狀態碼
+✅ **錯誤碼**: '35' 檔案不存在, '37' 權限不足, '30' I/O 錯誤
 
-```cobol
-       *> 錯誤：沒有檢查狀態
-       OPEN INPUT ACCT-FILE.
+✅ **錯誤處理**: EVALUATE 狀態碼, DECLARATIVES, EXCEPTION 子句
 
-       *> 正確：檢查狀態
-       OPEN INPUT ACCT-FILE
-       IF WS-ACCT-STATUS NOT = '00'
-           DISPLAY 'ERROR: ' WS-ACCT-STATUS
-           STOP RUN
-       END-IF.
-```
-
-### 錯誤 3：用 STOP RUN 代替錯誤處理
-
-```cobol
-       *> 不佳：直接停止，沒有清理資源
-       IF WS-STATUS NOT = '00'
-           STOP RUN
-       END-IF.
-
-       *> 較好：先清理再結束
-       IF WS-STATUS NOT = '00'
-           PERFORM 9000-CLEANUP
-           MOVE 12 TO RETURN-CODE
-           STOP RUN
-       END-IF.
-```
-
----
-
-## 練習題
-
-### 題目 1
-以下 FILE STATUS 碼各代表什麼意義？
-1. 00
-2. 10
-3. 35
-4. 34
-
-### 題目 2
-設計一個錯誤處理程序，處理以下情況：
-- 開檔失敗（狀態碼 35）
-- 讀取到檔案結尾（狀態碼 10）
-- 寫入失敗（狀態碼 34）
-
-### 題目 3
-為什麼在子程式中不應該直接使用 STOP RUN 處理錯誤？
-
----
-
-## 重點回顧
-
-| 概念 | 說明 |
-|------|------|
-| FILE STATUS | 2 碼狀態碼，表示 I/O 操作結果 |
-| 00 | 操作成功 |
-| 10 | 檔案結尾 |
-| 35 | 檔案不存在 |
-| DECLARATIVES | 自動錯誤處理區塊 |
-| RETURN-CODE | 程式返回碼，告知 JCL 執行狀態 |
+✅ **BA 關注點**: 檢查所有檔案操作, 測試錯誤情境, 記錄錯誤訊息
 
 ---
 
 ## 延伸閱讀
 
-- [Lesson 3-1：Sequential File 與 VSAM File](lesson-3-1-file-types.md)
-- [Lesson 3-3：JCL 基本結構](lesson-3-3-jcl-basic.md)
+- [Lesson 3-1: Sequential File and VSAM File](lesson-3-1-file-types.md)
+- [Lesson 3-2: File Operations](lesson-3-2-file-operations.md)
+
+---
+
+*課程版本: 1.0 | 更新日期: 2026-04-12*

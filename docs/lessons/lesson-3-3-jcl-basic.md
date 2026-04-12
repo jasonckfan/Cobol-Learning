@@ -1,308 +1,320 @@
-# Lesson 3-3：JCL 基本結構
+# Lesson 3-3: JCL 基本結構
+
+> 理解 Job Control Language 的基礎語法
+
+---
 
 ## 學習目標
 
-- 理解 JCL 的組成結構
-- 掌握 JOB、EXEC、DD 敘述的用途
-- 能夠閱讀基本的 JCL 批次作業
+- 理解 JCL 的基本結構與語法
+- 掌握 JOB、EXEC、DD 語句
+- 學會定義 Dataset 與參數
+- 了解 BA 在閱讀 JCL 時的關注點
 
 ---
 
-## 什麼是 JCL？
+## 一、JCL 概覽
 
-JCL（Job Control Language）是 IBM Mainframe 的作業控制語言，用於：
+### 1.1 什麼是 JCL？
 
-- 定義要執行的程式
-- 配置程式所需的資源
-- 控制作業的執行順序
+JCL (Job Control Language) 是 IBM Mainframe 上用於定義和執行批次作業的語言。它告訴系統要執行什麼程式、使用什麼檔案、以及如何處理輸出。
 
-> 💡 **BA 小提示**：JCL 就像是「程式的執行說明書」，告訴系統怎麼跑批次作業。
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              JCL 作業流程                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────┐                                               │
+│   │   JCL 程式  │  ── 定義作業需求                              │
+│   └──────┬──────┘                                               │
+│          ↓                                                      │
+│   ┌─────────────┐                                               │
+│   │   z/OS      │  ── 解讀 JCL，配置資源                        │
+│   │   系統      │                                               │
+│   └──────┬──────┘                                               │
+│          ↓                                                      │
+│   ┌─────────────┐                                               │
+│   │   執行      │  ── 執行程式、處理資料                        │
+│   │   作業      │                                               │
+│   └──────┬──────┘                                               │
+│          ↓                                                      │
+│   ┌─────────────┐                                               │
+│   │   輸出      │  ── 產生報表、日誌                            │
+│   └─────────────┘                                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.2 JCL 基本結構
+
+```jcl
+//JOBNAME  JOB (ACCT),'DESCRIPTION',CLASS=A,MSGCLASS=H
+//*----------------------------------------------------
+//* 這是註解行
+//*----------------------------------------------------
+//STEP1    EXEC PGM=PROGRAM1
+//INPUT    DD   DSN=INPUT.FILE,DISP=SHR
+//OUTPUT   DD   DSN=OUTPUT.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(10,5)),UNIT=SYSDA
+//SYSOUT   DD   SYSOUT=*
+//
+//STEP2    EXEC PGM=PROGRAM2,COND=(0,NE,STEP1)
+//INPUT    DD   DSN=OUTPUT.FILE,DISP=SHR
+//REPORT   DD   SYSOUT=*
+//
+```
 
 ---
 
-## JCL 三大敘述
+## 二、JOB 語句
 
-### 1. JOB 敘述
-
-標記作業的開始，定義作業層級的參數。
+### 2.1 JOB 語句語法
 
 ```jcl
-//作業名稱 JOB (帳號),'說明',關鍵字參數
+//JOBNAME  JOB (ACCT),'DESCRIPTION',CLASS=A,MSGCLASS=H,
+//             NOTIFY=USERID,REGION=0M
+
+說明：
+- JOBNAME: 作業名稱 (1-8 字元)
+- JOB: 關鍵字
+- (ACCT): 會計資訊
+- 'DESCRIPTION': 作業描述
+- CLASS=A: 作業類別
+- MSGCLASS=H: 訊息輸出類別
+- NOTIFY=USERID: 完成時通知使用者
+- REGION=0M: 記憶體限制
 ```
 
-#### 範例
-
-```jcl
-//ACCTINT JOB (BANK01),'利息計算',CLASS=A,
-//             MSGCLASS=X,NOTIFY=&SYSUID
-```
-
-#### 常用參數
+### 2.2 常用 JOB 參數
 
 | 參數 | 說明 | 範例 |
 |------|------|------|
-| (account) | 帳戶代碼，用於計費 | (BANK01) |
-| 'description' | 作業說明 | '利息計算' |
-| CLASS | 作業類別 | CLASS=A |
-| MSGCLASS | 訊息輸出類別 | MSGCLASS=X |
-| NOTIFY | 完成通知 | NOTIFY=&SYSUID |
-| TIME | 最大執行時間 | TIME=1440 |
-| REGION | 記憶體配置 | REGION=4M |
+| **CLASS** | 作業類別 | CLASS=A, CLASS=C |
+| **MSGCLASS** | 訊息輸出類別 | MSGCLASS=H, MSGCLASS=X |
+| **MSGLEVEL** | 訊息詳細程度 | MSGLEVEL=(1,1) |
+| **NOTIFY** | 完成通知 | NOTIFY=USERID |
+| **REGION** | 記憶體限制 | REGION=4M, REGION=0M |
+| **TIME** | CPU 時間限制 | TIME=5, TIME=1440 |
+| **PRTY** | 優先順序 | PRTY=5 |
 
 ---
 
-### 2. EXEC 敘述
+## 三、EXEC 語句
 
-標記作業步驟（Step），指定要執行的程式。
-
-```jcl
-//步驟名稱 EXEC PGM=程式名稱,參數
-```
-
-或執行程序（PROC）：
+### 3.1 EXEC 語句語法
 
 ```jcl
-//步驟名稱 EXEC PROC=程序名稱,參數
+//STEPNAME EXEC PGM=PROGRAM,COND=(0,NE),
+//             PARM='PARAMETERS',TIME=5
+
+說明：
+- STEPNAME: 步驟名稱 (1-8 字元)
+- EXEC: 關鍵字
+- PGM=PROGRAM: 要執行的程式
+- COND: 執行條件
+- PARM: 傳遞給程式的參數
+- TIME: CPU 時間限制
 ```
 
-#### 範例
+### 3.2 PROCEDURE 呼叫
 
 ```jcl
-//STEP010 EXEC PGM=ACCTINT,REGION=4M
-//STEP020 EXEC PGM=IKJEFT01,REGION=2M
-//STEP030 EXEC PROC=DAILYBAT
+//STEPNAME EXEC PROC=PROCNAME
+//STEPNAME EXEC PROCNAME
+
+* 覆蓋 PROC 中的參數
+//STEPNAME EXEC PROC=PROCNAME,
+//             PARM.STEP1='OVERRIDE'
+//INPUT    DD   DSN=MY.FILE,DISP=SHR
 ```
 
-#### 常用參數
-
-| 參數 | 說明 | 範例 |
-|------|------|------|
-| PGM | 要執行的程式 | PGM=ACCTINT |
-| PROC | 要執行的程序 | PROC=DAILYBAT |
-| REGION | 記憶體需求 | REGION=4M |
-| TIME | 最長執行時間 | TIME=60 |
-| PARM | 程式參數 | PARM='DAILY' |
-| COND | 條件執行 | COND=(0,NE) |
-
----
-
-### 3. DD 敘述
-
-定義程式使用的資料集（檔案）或設備。
+### 3.3 COND 參數
 
 ```jcl
-//dd名稱 DD 參數
-```
+* 條件執行範例
 
-#### 範例
+* 只有前一步驟 RC=0 才執行
+//STEP2    EXEC PGM=PROG2,COND=(0,NE,STEP1)
 
-```jcl
-//SYSOUT   DD SYSOUT=*
-//ACCTDATA DD DSN=PROD.ACCT.MASTER,DISP=SHR
-//INTFILE  DD DSN=PROD.INT.DAILY(+1),DISP=(NEW,CATLG),
-//            SPACE=(CYL,(50,25)),UNIT=SYSDA
-```
+* 前一步驟 RC<=4 才執行
+//STEP3    EXEC PGM=PROG3,COND=(4,LT,STEP2)
 
-#### 常用參數
+* 多條件 (AND 關係)
+//STEP4    EXEC PGM=PROG4,COND=((0,NE,STEP1),(0,NE,STEP2))
 
-| 參數 | 說明 | 範例 |
-|------|------|------|
-| SYSOUT | 系統輸出 | SYSOUT=* |
-| DSN | 資料集名稱 | DSN=PROD.ACCT |
-| DISP | 資料集狀態 | DISP=SHR |
-| SPACE | 空間配置 | SPACE=(CYL,(50,25)) |
-| UNIT | 儲存設備 | UNIT=SYSDA |
-| DCB | 資料控制塊 | DCB=(RECFM=FB,LRECL=80) |
-| VOL | 磁碟機代號 | VOL=SER=PROD01 |
+* 即使前一步驟失敗也執行
+//STEP5    EXEC PGM=PROG5,COND=EVEN
 
----
-
-## DISP 參數詳解
-
-```
-DISP=(狀態,正常處理,異常處理)
-```
-
-### 狀態值
-
-| 值 | 說明 |
-|----|------|
-| NEW | 新建資料集 |
-| OLD | 獨佔使用現有資料集 |
-| SHR | 共享使用現有資料集 |
-| MOD | 在現有資料集末尾追加 |
-
-### 正常/異常處理
-
-| 值 | 說明 |
-|----|------|
-| DELETE | 刪除資料集 |
-| KEEP | 保留資料集 |
-| CATLG | 保留並加入目錄 |
-| UNCATLG | 保留但從目錄移除 |
-
-### 範例
-
-```jcl
-//INPUT   DD DSN=PROD.ACCT.MASTER,DISP=SHR
-//OUTPUT  DD DSN=PROD.INT.DAILY(+1),DISP=(NEW,CATLG,DELETE)
-//TEMP    DD DSN=&&TEMP,DISP=(NEW,DELETE),SPACE=(TRK,(10,5))
+* 只有前一步驟失敗才執行
+//STEP6    EXEC PGM=PROG6,COND=ONLY
 ```
 
 ---
 
-## GDG（Generation Data Group）
+## 四、DD 語句
 
-世代資料集，用於管理同一資料集的多個版本。
-
-### 定義格式
-
-```
-DSN=資料集名稱(世代)
-```
-
-### 世代表示
-
-| 表示 | 說明 |
-|------|------|
-| (0) | 當前世代 |
-| (+1) | 新建下一世代 |
-| (-1) | 上一世代 |
-| (-2) | 前兩個世代 |
-
-### 範例
+### 4.1 DD 語句基礎
 
 ```jcl
-// 讀取當天資料
-//INPUT   DD DSN=PROD.DAILY.TRANS(0),DISP=SHR
+//DDNAME   DD   DSN=DATASET.NAME,DISP=STATUS,
+//             SPACE=(UNIT,(PRIMARY,SECONDARY)),
+//             UNIT=DEVICE,VOL=SER=VOLUME
 
-// 讀取前一天資料
-//PREV    DD DSN=PROD.DAILY.TRANS(-1),DISP=SHR
+說明：
+- DDNAME: DD 名稱 (1-8 字元)
+- DD: 關鍵字
+- DSN: Dataset 名稱
+- DISP: 處理狀態
+- SPACE: 空間配置
+- UNIT: 裝置類型
+- VOL: 磁碟區
+```
 
-// 建立新世代
-//OUTPUT  DD DSN=PROD.DAILY.TRANS(+1),DISP=(NEW,CATLG)
+### 4.2 DISP 參數
+
+```jcl
+* DISP=(狀態,正常結束處理,異常結束處理)
+
+* 已存在檔案，共用讀取
+//INPUT    DD   DSN=EXISTING.FILE,DISP=SHR
+
+* 新檔案，正常結束時保留，異常時刪除
+//OUTPUT   DD   DSN=NEW.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(10,5)),UNIT=SYSDA
+
+* 已存在檔案，正常結束時保留，異常時保留
+//WORK     DD   DSN=TEMP.FILE,DISP=(OLD,DELETE,DELETE)
+
+* 修改已存在檔案
+//UPDATE   DD   DSN=MASTER.FILE,DISP=MOD
+```
+
+### 4.3 SPACE 參數
+
+```jcl
+* SPACE=(單位,(初值,增量,目錄區塊),RLSE)
+
+* 基本配置
+//DATA     DD   DSN=MY.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(100,50)),UNIT=SYSDA
+
+* 使用 TRACK
+//DATA     DD   DSN=MY.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(TRK,(1000,500)),UNIT=SYSDA
+
+* 使用 BLOCK
+//DATA     DD   DSN=MY.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(1000,(5000,1000)),UNIT=SYSDA
+
+* 釋放未使用空間
+//DATA     DD   DSN=MY.FILE,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(100,50),RLSE),UNIT=SYSDA
 ```
 
 ---
 
-## 完整 JCL 範例
+## 五、特殊 DD 語句
 
-### 銀行日終批次作業
+### 5.1 SYSOUT 與 SYSPRINT
 
 ```jcl
-//DAILYEOD JOB (BANK01),'日終批次處理',
-//             CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID
-//*********************************************************************
-//*  日終批次處理
-//*  1. 利息計算
-//*  2. 報表生成
-//*********************************************************************
-//*
-//*  Step 1: 利息計算
-//*
-//INTCALC  EXEC PGM=DAILYINT,REGION=4M
-//STEPLIB  DD DSN=PROD.LOADLIB,DISP=SHR
-//SYSOUT   DD SYSOUT=*
-//SYSPRINT DD SYSOUT=*
-//SYSUDUMP DD SYSOUT=*
-//ACCTDATA DD DSN=PROD.ACCT.MASTER,DISP=SHR
-//INTFILE  DD DSN=PROD.INT.DAILY(+1),DISP=(NEW,CATLG),
-//            SPACE=(CYL,(50,25)),UNIT=SYSDA,
-//            DCB=(RECFM=FB,LRECL=80,BLKSIZE=800)
-//SYSIN    DD *
- PROCESS_DATE=20260404
- INT_RATE=0.025
+* 輸出到系統輸出 (Spool)
+//SYSOUT   DD   SYSOUT=*
+//SYSOUT   DD   SYSOUT=A
+
+* 輸出到特定資料集
+//REPORT   DD   SYSOUT=*
+//SYSOUT   DD   DSN=OUTPUT.DATA,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(10,5)),UNIT=SYSDA
+```
+
+### 5.2 DUMMY 與 NULL
+
+```jcl
+* 無輸入
+//INPUT    DD   DUMMY
+
+* 丟棄輸出
+//OUTPUT   DD   DUMMY
+
+* 使用 IEFBR14 (空程式)
+//STEP1    EXEC PGM=IEFBR14
+```
+
+### 5.3 參考其他 DD
+
+```jcl
+* 參考同一 JOB 中的其他 DD
+//OUTPUT   DD   DSN=*.STEP1.INPUT,DISP=SHR
+
+* 參考前一步驟的輸出
+//INPUT    DD   DSN=*.STEP1.OUTPUT,DISP=SHR
+```
+
+---
+
+## 六、完整 JCL 範例
+
+### 6.1 批次計算作業
+
+```jcl
+//CALCBAT  JOB (ACCT001),'INTEREST CALC',CLASS=A,MSGCLASS=H,
+//             NOTIFY=USERID,REGION=4M
+//*----------------------------------------------------
+//* 日終利息計算作業
+//*----------------------------------------------------
+//STEP1    EXEC PGM=IEFBR14
+//DELFILE  DD   DSN=TEMP.WORK.FILE,DISP=(MOD,DELETE,DELETE),
+//             SPACE=(TRK,1),UNIT=SYSDA
+//*----------------------------------------------------
+//* 排序交易檔
+//*----------------------------------------------------
+//STEP2    EXEC PGM=SORT
+//SORTIN   DD   DSN=INPUT.TXN.FILE,DISP=SHR
+//SORTOUT  DD   DSN=TEMP.SORTED.TXN,DISP=(NEW,PASS,DELETE),
+//             SPACE=(CYL,(50,25)),UNIT=SYSDA
+//SYSOUT   DD   SYSOUT=*
+//SYSIN    DD   *
+ SORT FIELDS=(1,10,CH,A)
 /*
-//*
-//*  Step 2: 餘額更新
-//*
-//BALUPD  EXEC PGM=BALUPD,REGION=4M,COND=(0,NE)
-//STEPLIB  DD DSN=PROD.LOADLIB,DISP=SHR
-//SYSOUT   DD SYSOUT=*
-//INTFILE  DD DSN=PROD.INT.DAILY(0),DISP=SHR
-//ACCTDATA DD DSN=PROD.ACCT.MASTER,DISP=OLD
-//*
-//*  Step 3: 報表生成
-//*
-//RPTGEN  EXEC PGM=RPTGEN,REGION=4M,COND=(0,NE)
-//STEPLIB  DD DSN=PROD.LOADLIB,DISP=SHR
-//SYSOUT   DD SYSOUT=*
-//ACCTDATA DD DSN=PROD.ACCT.MASTER,DISP=SHR
-//DAILYRPT DD DSN=PROD.RPT.DAILY(+1),DISP=(NEW,CATLG),
-//            SPACE=(CYL,(20,10)),UNIT=SYSDA,
-//            DCB=(RECFM=FB,LRECL=133)
-//*
+//*----------------------------------------------------
+//* 計算利息
+//*----------------------------------------------------
+//STEP3    EXEC PGM=CALCINT,COND=(0,NE,STEP2)
+//TXNFILE  DD   DSN=*.STEP2.SORTOUT,DISP=SHR
+//ACCTFILE DD   DSN=MASTER.ACCOUNT.FILE,DISP=SHR
+//RPTFILE  DD   DSN=OUTPUT.INTEREST.RPT,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(20,10)),UNIT=SYSDA
+//SYSOUT   DD   SYSOUT=*
+//SYSABEND DD   SYSOUT=*
+//*----------------------------------------------------
+//* 備份結果
+//*----------------------------------------------------
+//STEP4    EXEC PGM=IEBGENER,COND=(0,NE,STEP3)
+//SYSUT1   DD   DSN=OUTPUT.INTEREST.RPT,DISP=SHR
+//SYSUT2   DD   DSN=BACKUP.INTEREST.RPT(+1),DISP=(NEW,CATLG,DELETE),
+//             SPACE=(CYL,(20,10)),UNIT=SYSDA
+//SYSPRINT DD   SYSOUT=*
+//SYSIN    DD   DUMMY
+//
 ```
 
 ---
 
-## BA 實務應用
+## 七、總結
 
-### 如何閱讀 JCL？
+### 本課程重點回顧
 
-1. **看 JOB 敘述**：了解作業名稱和用途
-2. **看 EXEC 敘述**：了解執行哪些程式
-3. **看 DD 敘述**：了解使用哪些檔案
-4. **追蹤資料流向**：從 DD 名稱對應到 COBOL 的 ASSIGN TO
+✅ **JOB**: 定義作業，設定類別、訊息、資源
 
-### 與 COBOL 的對應關係
+✅ **EXEC**: 執行程式，設定條件、參數
 
-**JCL:**
-```jcl
-//ACCTDATA DD DSN=PROD.ACCT.MASTER,DISP=SHR
-```
+✅ **DD**: 定義檔案，設定名稱、狀態、空間
 
-**COBOL:**
-```cobol
-       SELECT ACCT-FILE ASSIGN TO ACCTDATA
-```
+✅ **常用參數**: DISP, SPACE, UNIT, COND
 
-> DD 名稱（ACCTDATA）對應 COBOL 的 ASSIGN TO 名稱。
-
-### 需求分析時的關鍵問題
-
-| 看到的內容 | 應該問的問題 |
-|------------|-------------|
-| 多個 EXEC | 「這些步驟的執行順序是什麼？」 |
-| COND 參數 | 「在什麼情況下會跳過這個步驟？」 |
-| DISP=OLD | 「這個檔案會被獨佔鎖定嗎？」 |
-| GDG (+1) | 「這是新建資料還是覆蓋？」 |
+✅ **特殊 DD**: SYSOUT, DUMMY, 參考語法
 
 ---
 
-## 練習題
-
-### 題目 1
-說明以下 JCL 中各個參數的意義：
-
-```jcl
-//STEP010 EXEC PGM=ACCTINT,REGION=4M,TIME=60
-```
-
-### 題目 2
-以下 DD 敘述定義了什麼？
-
-```jcl
-//OUTPUT DD DSN=PROD.RPT.DAILY(+1),DISP=(NEW,CATLG,DELETE),
-//          SPACE=(CYL,(20,10)),UNIT=SYSDA
-```
-
-### 題目 3
-設計一個 JCL，執行程式 RPTGEN，讀取 PROD.DATA.INPUT，輸出到 PROD.DATA.OUTPUT。
-
----
-
-## 重點回顧
-
-| 敘述 | 功能 | 關鍵參數 |
-|------|------|----------|
-| JOB | 定義作業 | CLASS, MSGCLASS, NOTIFY |
-| EXEC | 定義步驟 | PGM, PROC, REGION, TIME |
-| DD | 定義資料 | DSN, DISP, SPACE, UNIT |
-
----
-
-## 延伸閱讀
-
-- [Lesson 3-4：Sort 與 Utility](lesson-3-4-sort-utility.md)
-- [Lesson 4-3：日終批次處理流程](lesson-4-3-eod-process.md)
+*課程版本: 1.0 | 更新日期: 2026-04-12*

@@ -1,360 +1,380 @@
-# Lesson 3-5：報表輸出流程
+# Lesson 3-5: 報表輸出流程
+
+> 理解 Mainframe 報表產生與輸出機制
+
+---
 
 ## 學習目標
 
-- 理解報表結構設計原則
-- 掌握分頁與標題處理技巧
-- 能夠設計基本的報表輸出程式
+- 理解報表的基本結構與格式
+- 掌握控制換頁與標題
+- 學會設計報表程式
+- 了解 BA 在報表需求分析時的關注點
 
 ---
 
-## 報表結構設計
+## 一、報表結構
 
-### 報表組成要素
+### 1.1 報表基本組成
 
 ```
-┌────────────────────────────────────────┐
-│              報表標題                    │  ← Report Header
-├────────────────────────────────────────┤
-│  頁碼: 1    日期: 2026/04/04            │  ← Page Header
-├────────────────────────────────────────┤
-│  帳號        戶名          餘額          │  ← Column Header
-├────────────────────────────────────────┤
-│  1234567890  JOHN DOE      10,000.00    │  ← Detail Line
-│  1234567891  JANE SMITH    25,000.00    │
-│  ...                                   │
-├────────────────────────────────────────┤
-│              小計: 35,000.00            │  ← Control Break
-├────────────────────────────────────────┤
-│  ...                                   │
-├────────────────────────────────────────┤
-│              總計: 100,000.00           │  ← Report Footer
-│  報表結束                               │
-└────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│              報表基本結構                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  報表標題 (Report Header)                                │  │
+│   │  - 報表名稱                                              │  │
+│   │  - 產生日期/時間                                         │  │
+│   │  - 頁碼                                                  │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  欄位標題 (Column Headers)                               │  │
+│   │  - 各欄位名稱                                            │  │
+│   │  - 分隔線                                                │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  明細資料 (Detail Lines)                                 │  │
+│   │  - 實際資料記錄                                          │  │
+│   │  - 多筆重複                                              │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  小計/合計 (Subtotals)                                   │  │
+│   │  - 分組加總                                              │  │
+│   │  - 控制中斷處理                                          │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  總計 (Grand Total)                                      │  │
+│   │  - 全報表加總                                            │  │
+│   │  - 統計資訊                                              │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 報表類型
+### 1.2 報表格式範例
 
-| 類型 | 說明 | 範例 |
-|------|------|------|
-| 明細報表 | 列出每筆記錄 | 交易明細報表 |
-| 彙總報表 | 統計彙總資料 | 日結報表 |
-| 控制報表 | 依控制欄位分組小計 | 分行業績報表 |
-| 例外報表 | 只列出異常資料 | 透支帳戶報表 |
+```
+================================================================================
+                        DAILY TRANSACTION REPORT
+                        Date: 2026/04/12
+                        Page: 001
+================================================================================
+
+Account Number  Transaction Date   Type      Amount        Balance
+--------------  ----------------   ----    ----------    ----------
+123456789012    2026/04/12         DEP       1,000.00     10,500.00
+123456789012    2026/04/12         WTH         500.00     10,000.00
+123456789013    2026/04/12         DEP       2,500.00     15,200.00
+
+                              Subtotal:     4,000.00
+
+================================================================================
+                              Grand Total:    4,000.00
+                              Record Count:         3
+================================================================================
+```
 
 ---
 
-## 報表記錄結構
+## 二、報表控制
 
-### COBOL 資料定義
+### 2.1 換頁控制
 
 ```cobol
-       01 RPT-HEADER-1.
-          05 FILLER            PIC X(40) VALUE SPACES.
-          05 RPT-TITLE         PIC X(30) VALUE 
-             '銀行帳戶餘額日報表'.
-          05 FILLER            PIC X(30) VALUE SPACES.
-
-       01 RPT-HEADER-2.
-          05 FILLER            PIC X(10) VALUE '頁碼: '.
-          05 RPT-PAGE-NUM      PIC ZZZ9.
-          05 FILLER            PIC X(30) VALUE SPACES.
-          05 FILLER            PIC X(10) VALUE '日期: '.
-          05 RPT-DATE          PIC 9999/99/99.
-          05 FILLER            PIC X(14) VALUE SPACES.
-
-       01 RPT-COL-HEADER.
-          05 FILLER            PIC X(18) VALUE '帳號'.
-          05 FILLER            PIC X(42) VALUE '戶名'.
-          05 FILLER            PIC X(20) VALUE '餘額'.
-          05 FILLER            PIC X(20) VALUE '狀態'.
-
-       01 RPT-DETAIL-LINE.
-          05 RPT-ACCT-NO       PIC X(16).
-          05 FILLER            PIC XX VALUE SPACES.
-          05 RPT-ACCT-NAME     PIC X(40).
-          05 FILLER            PIC XX VALUE SPACES.
-          05 RPT-BALANCE       PIC $$$,$$$,$$9.99.
-          05 FILLER            PIC XX VALUE SPACES.
-          05 RPT-STATUS        PIC X(10).
-
-       01 RPT-TOTAL-LINE.
-          05 FILLER            PIC X(58) VALUE SPACES.
-          05 FILLER            PIC X(10) VALUE '總計: '.
-          05 RPT-TOTAL-AMT     PIC $$$,$$$,$$9.99.
-          05 FILLER            PIC X(20) VALUE SPACES.
-```
-
----
-
-## 分頁處理
-
-### 分頁邏輯
-
-```cobol
+       *---- 換頁控制範例 -----------------------------------------
+       
        WORKING-STORAGE SECTION.
-       01 WS-PAGE-CONTROL.
-          05 WS-LINES-PER-PAGE PIC 99 VALUE 55.
-          05 WS-LINE-COUNT     PIC 99 VALUE 0.
-          05 WS-PAGE-NUM       PIC 9(4) VALUE 0.
-
+       01  WS-PAGE-COUNT      PIC 9(3) VALUE 0.
+       01  WS-LINE-COUNT      PIC 9(3) VALUE 0.
+       01  WS-LINES-PER-PAGE  PIC 9(3) VALUE 55.
+       01  WS-HEADING-LINES   PIC 9(3) VALUE 5.
+       
        PROCEDURE DIVISION.
-       3000-WRITE-DETAIL.
-           ADD 1 TO WS-LINE-COUNT
-           IF WS-LINE-COUNT > WS-LINES-PER-PAGE
-               PERFORM 3100-PAGE-BREAK
-           END-IF
-           WRITE RPT-RECORD FROM RPT-DETAIL-LINE.
-
-       3100-PAGE-BREAK.
-           ADD 1 TO WS-PAGE-NUM
-           MOVE WS-PAGE-NUM TO RPT-PAGE-NUM
-           WRITE RPT-RECORD FROM RPT-HEADER-1
-               AFTER PAGE
-           WRITE RPT-RECORD FROM RPT-HEADER-2
-           WRITE RPT-RECORD FROM RPT-COL-HEADER
-           MOVE 3 TO WS-LINE-COUNT.
-```
-
----
-
-## 控制中斷（Control Break）
-
-依特定欄位分組，每組產生小計。
-
-### 範例：依分行統計
-
-```cobol
-       WORKING-STORAGE SECTION.
-       01 WS-CONTROL-FIELDS.
-          05 WS-SAVE-BRANCH    PIC X(4) VALUE SPACES.
-          05 WS-BRANCH-TOTAL   PIC S9(13)V99 VALUE 0.
-          05 WS-GRAND-TOTAL    PIC S9(13)V99 VALUE 0.
-
-       PROCEDURE DIVISION.
-       2000-PROCESS.
-      *    檢查是否需要控制中斷
-           IF ACCT-BRANCH NOT = WS-SAVE-BRANCH
-               IF WS-SAVE-BRANCH NOT = SPACES
-                   PERFORM 2200-BRANCH-TOTAL
-               END-IF
-               MOVE ACCT-BRANCH TO WS-SAVE-BRANCH
-               MOVE 0 TO WS-BRANCH-TOTAL
-           END-IF
-
-      *    處理明細
-           PERFORM 2100-WRITE-DETAIL
-           ADD ACCT-BALANCE TO WS-BRANCH-TOTAL
-           ADD ACCT-BALANCE TO WS-GRAND-TOTAL.
-
-       2200-BRANCH-TOTAL.
-      *    輸出分行小計
-           MOVE WS-SAVE-BRANCH TO RPT-BRANCH
-           MOVE WS-BRANCH-TOTAL TO RPT-BRANCH-AMT
-           WRITE RPT-RECORD FROM RPT-BRANCH-TOTAL-LINE
+       
+       * 檢查是否需要換頁
+       2000-CHECK-PAGE-BREAK.
+           IF WS-LINE-COUNT >= WS-LINES-PER-PAGE
+               PERFORM 3000-WRITE-HEADING
+           END-IF.
+       
+       * 寫入標題
+       3000-WRITE-HEADING.
+           ADD 1 TO WS-PAGE-COUNT
+           MOVE 0 TO WS-LINE-COUNT
+           
+           WRITE REPORT-LINE FROM WS-PAGE-BREAK
+               AFTER ADVANCING PAGE
+           
+           WRITE REPORT-LINE FROM WS-REPORT-TITLE
+           WRITE REPORT-LINE FROM WS-DATE-LINE
+           WRITE REPORT-LINE FROM WS-PAGE-NUM-LINE
+           WRITE REPORT-LINE FROM WS-BLANK-LINE
+           WRITE REPORT-LINE FROM WS-COLUMN-HEADER
+           WRITE REPORT-LINE FROM WS-UNDERLINE
+           
+           ADD WS-HEADING-LINES TO WS-LINE-COUNT.
+       
+       * 寫入明細
+       2100-WRITE-DETAIL.
+           PERFORM 2000-CHECK-PAGE-BREAK
+           WRITE REPORT-LINE FROM WS-DETAIL-LINE
+               AFTER ADVANCING 1 LINES
            ADD 1 TO WS-LINE-COUNT.
 ```
 
+### 2.2 控制中斷 (Control Break)
+
+```cobol
+       *---- 控制中斷處理範例 -------------------------------------
+       
+       WORKING-STORAGE SECTION.
+       01  WS-CURRENT-KEY     PIC X(10).
+       01  WS-PREVIOUS-KEY    PIC X(10).
+       01  WS-SUBTOTAL        PIC S9(11)V99 COMP-3 VALUE 0.
+       01  WS-GRAND-TOTAL     PIC S9(11)V99 COMP-3 VALUE 0.
+       
+       PROCEDURE DIVISION.
+       
+       2000-PROCESS-RECORD.
+           * 檢查控制中斷
+           IF WS-CURRENT-KEY NOT = WS-PREVIOUS-KEY AND
+              WS-PREVIOUS-KEY NOT = SPACES
+               PERFORM 2200-WRITE-SUBTOTAL
+           END-IF
+           
+           * 累計
+           ADD TXN-AMOUNT TO WS-SUBTOTAL
+           ADD TXN-AMOUNT TO WS-GRAND-TOTAL
+           
+           * 寫入明細
+           PERFORM 2100-WRITE-DETAIL
+           
+           * 儲存目前 Key
+           MOVE WS-CURRENT-KEY TO WS-PREVIOUS-KEY.
+       
+       2200-WRITE-SUBTOTAL.
+           PERFORM 2000-CHECK-PAGE-BREAK
+           
+           MOVE WS-SUBTOTAL TO WS-SUBTOTAL-DISPLAY
+           MOVE WS-PREVIOUS-KEY TO WS-SUBTOTAL-KEY
+           
+           WRITE REPORT-LINE FROM WS-SUBTOTAL-LINE
+               AFTER ADVANCING 1 LINES
+           ADD 1 TO WS-LINE-COUNT
+           
+           WRITE REPORT-LINE FROM WS-BLANK-LINE
+           ADD 1 TO WS-LINE-COUNT
+           
+           MOVE 0 TO WS-SUBTOTAL.
+```
+
 ---
 
-## 完整報表程式範例
+## 三、報表程式範例
+
+### 3.1 完整報表程式
 
 ```cobol
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. ACCTRPT.
-
+       PROGRAM-ID. RPTGEN.
+       
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT ACCT-FILE ASSIGN TO ACCTDATA
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-ACCT-STATUS.
-           SELECT RPT-FILE ASSIGN TO ACCTRPT
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-RPT-STATUS.
-
+           SELECT TXN-FILE ASSIGN TO 'TXNFILE'
+               ORGANIZATION IS SEQUENTIAL.
+           SELECT RPT-FILE ASSIGN TO 'RPTFILE'
+               ORGANIZATION IS SEQUENTIAL.
+       
        DATA DIVISION.
        FILE SECTION.
-       FD ACCT-FILE.
-       01 ACCT-RECORD.
-          05 ACCT-NO           PIC X(16).
-          05 ACCT-NAME         PIC X(40).
-          05 ACCT-BALANCE      PIC S9(11)V99 COMP-3.
-          05 ACCT-STATUS       PIC X.
-
-       FD RPT-FILE
-           RECORD CONTAINS 133 CHARACTERS
-           RECORDING MODE IS F.
-       01 RPT-RECORD           PIC X(133).
-
+       FD  TXN-FILE.
+       01  TXN-RECORD.
+           05  TXN-ACCT         PIC X(12).
+           05  TXN-DATE         PIC 9(8).
+           05  TXN-TYPE         PIC X(3).
+           05  TXN-AMOUNT       PIC S9(9)V99 COMP-3.
+       
+       FD  RPT-FILE.
+       01  RPT-RECORD         PIC X(80).
+       
        WORKING-STORAGE SECTION.
-       01 WS-STATUS.
-          05 WS-ACCT-STATUS    PIC XX.
-          05 WS-RPT-STATUS     PIC XX.
-
-       01 WS-FLAGS.
-          05 WS-EOF-FLAG       PIC X VALUE 'N'.
-             88 EOF-REACHED    VALUE 'Y'.
-
-       01 WS-PAGE-CONTROL.
-          05 WS-LINES-PER-PAGE PIC 99 VALUE 55.
-          05 WS-LINE-COUNT     PIC 99 VALUE 0.
-          05 WS-PAGE-NUM       PIC 9(4) VALUE 0.
-
-       01 WS-TOTALS.
-          05 WS-GRAND-TOTAL    PIC S9(13)V99 COMP-3 VALUE 0.
-          05 WS-ACCT-COUNT     PIC 9(8) VALUE 0.
-
-       01 RPT-HEADER-1.
-          05 FILLER            PIC X(50) VALUE SPACES.
-          05 FILLER            PIC X(30) VALUE
-             '銀行帳戶餘額日報表'.
-          05 FILLER            PIC X(53) VALUE SPACES.
-
-       01 RPT-HEADER-2.
-          05 FILLER            PIC X(10) VALUE '頁碼: '.
-          05 RPT-PAGE-NUM      PIC ZZZ9.
-          05 FILLER            PIC X(50) VALUE SPACES.
-          05 FILLER            PIC X(10) VALUE '日期: '.
-          05 RPT-DATE          PIC 9999/99/99.
-          05 FILLER            PIC X(55) VALUE SPACES.
-
-       01 RPT-COL-HEADER.
-          05 FILLER            PIC X(18) VALUE '帳號'.
-          05 FILLER            PIC X(42) VALUE '戶名'.
-          05 FILLER            PIC X(25) VALUE '餘額'.
-          05 FILLER            PIC X(48) VALUE SPACES.
-
-       01 RPT-DETAIL-LINE.
-          05 RPT-ACCT-NO       PIC X(16).
-          05 FILLER            PIC XX VALUE SPACES.
-          05 RPT-ACCT-NAME     PIC X(40).
-          05 FILLER            PIC XX VALUE SPACES.
-          05 RPT-BALANCE       PIC $$$,$$$,$$9.99.
-          05 FILLER            PIC X(63) VALUE SPACES.
-
-       01 RPT-TOTAL-LINE.
-          05 FILLER            PIC X(10) VALUE '總筆數: '.
-          05 RPT-ACCT-CNT      PIC Z,ZZZ,ZZ9.
-          05 FILLER            PIC X(20) VALUE SPACES.
-          05 FILLER            PIC X(10) VALUE '總餘額: '.
-          05 RPT-TOTAL-AMT     PIC $$$,$$$,$$9.99.
-          05 FILLER            PIC X(52) VALUE SPACES.
-
+       01  WS-SWITCHES.
+           05  WS-EOF           PIC X VALUE 'N'.
+           05  WS-FIRST-RECORD  PIC X VALUE 'Y'.
+       
+       01  WS-COUNTERS.
+           05  WS-PAGE-COUNT    PIC 9(3) VALUE 0.
+           05  WS-LINE-COUNT    PIC 9(3) VALUE 999.
+           05  WS-TXN-COUNT     PIC 9(7) VALUE 0.
+       
+       01  WS-TOTALS.
+           05  WS-SUBTOTAL      PIC S9(11)V99 COMP-3 VALUE 0.
+           05  WS-GRAND-TOTAL   PIC S9(11)V99 COMP-3 VALUE 0.
+       
+       01  WS-KEYS.
+           05  WS-CURR-ACCT     PIC X(12).
+           05  WS-PREV-ACCT     PIC X(12).
+       
+       01  WS-HEADING-1.
+           05  FILLER           PIC X(25) VALUE SPACES.
+           05  FILLER           PIC X(30) VALUE 
+               'DAILY TRANSACTION REPORT'.
+           05  FILLER           PIC X(25) VALUE SPACES.
+       
+       01  WS-HEADING-2.
+           05  FILLER           PIC X(25) VALUE SPACES.
+           05  FILLER           PIC X(5) VALUE 'Date:'.
+           05  WS-RPT-DATE      PIC X(10).
+           05  FILLER           PIC X(40) VALUE SPACES.
+       
+       01  WS-HEADING-3.
+           05  FILLER           PIC X(25) VALUE SPACES.
+           05  FILLER           PIC X(5) VALUE 'Page:'.
+           05  WS-RPT-PAGE      PIC ZZ9.
+           05  FILLER           PIC X(47) VALUE SPACES.
+       
+       01  WS-COLUMN-HDR.
+           05  FILLER           PIC X(2) VALUE SPACES.
+           05  FILLER           PIC X(12) VALUE 'Account'.
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  FILLER           PIC X(10) VALUE 'Date'.
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  FILLER           PIC X(4) VALUE 'Type'.
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  FILLER           PIC X(12) VALUE 'Amount'.
+           05  FILLER           PIC X(24) VALUE SPACES.
+       
+       01  WS-DETAIL-LINE.
+           05  FILLER           PIC X(2) VALUE SPACES.
+           05  WS-DTL-ACCT      PIC X(12).
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  WS-DTL-DATE      PIC 9999/99/99.
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  WS-DTL-TYPE      PIC X(3).
+           05  FILLER           PIC X(3) VALUE SPACES.
+           05  WS-DTL-AMOUNT    PIC ZZZ,ZZZ,ZZ9.99.
+           05  FILLER           PIC X(24) VALUE SPACES.
+       
+       01  WS-SUBTOTAL-LINE.
+           05  FILLER           PIC X(30) VALUE SPACES.
+           05  FILLER           PIC X(10) VALUE 'Subtotal:'.
+           05  WS-SUB-AMOUNT    PIC ZZZ,ZZZ,ZZ9.99.
+           05  FILLER           PIC X(24) VALUE SPACES.
+       
+       01  WS-TOTAL-LINE.
+           05  FILLER           PIC X(30) VALUE SPACES.
+           05  FILLER           PIC X(12) VALUE 'Grand Total:'.
+           05  WS-TOT-AMOUNT    PIC ZZZ,ZZZ,ZZ9.99.
+           05  FILLER           PIC X(22) VALUE SPACES.
+       
        PROCEDURE DIVISION.
        0000-MAIN.
            PERFORM 1000-INIT
-           PERFORM 2000-PROCESS UNTIL EOF-REACHED
-           PERFORM 3000-FINALIZE
-           PERFORM 9000-TERM
+           PERFORM 2000-PROCESS
+           PERFORM 3000-TERM
            STOP RUN.
-
+       
        1000-INIT.
-           OPEN INPUT ACCT-FILE
+           OPEN INPUT TXN-FILE
            OPEN OUTPUT RPT-FILE
-           PERFORM 1100-PAGE-HEADER
-           PERFORM 1200-READ-FIRST.
-
-       1100-PAGE-HEADER.
-           ADD 1 TO WS-PAGE-NUM
-           MOVE WS-PAGE-NUM TO RPT-PAGE-NUM
-           MOVE FUNCTION CURRENT-DATE(1:8) TO RPT-DATE
-           WRITE RPT-RECORD FROM RPT-HEADER-1
-               AFTER PAGE
-           WRITE RPT-RECORD FROM RPT-HEADER-2
-           WRITE RPT-RECORD FROM RPT-COL-HEADER
-           MOVE 3 TO WS-LINE-COUNT.
-
-       1200-READ-FIRST.
-           READ ACCT-FILE
-               AT END SET EOF-REACHED TO TRUE
-           END-READ.
-
+           ACCEPT WS-RPT-DATE FROM DATE YYYYMMDD
+           READ TXN-FILE
+               AT END
+                   MOVE 'Y' TO WS-EOF.
+       
        2000-PROCESS.
-           PERFORM 2100-WRITE-DETAIL
-           ADD ACCT-BALANCE TO WS-GRAND-TOTAL
-           ADD 1 TO WS-ACCT-COUNT
-           PERFORM 1200-READ-FIRST.
-
+           PERFORM UNTIL WS-EOF
+               MOVE TXN-ACCT TO WS-CURR-ACCT
+               
+               IF WS-CURR-ACCT NOT = WS-PREV-ACCT AND
+                  WS-FIRST-RECORD = 'N'
+                   PERFORM 2200-SUBTOTAL-BREAK
+               END-IF
+               
+               PERFORM 2100-WRITE-DETAIL
+               
+               ADD TXN-AMOUNT TO WS-SUBTOTAL
+               ADD TXN-AMOUNT TO WS-GRAND-TOTAL
+               ADD 1 TO WS-TXN-COUNT
+               
+               MOVE WS-CURR-ACCT TO WS-PREV-ACCT
+               MOVE 'N' TO WS-FIRST-RECORD
+               
+               READ TXN-FILE
+                   AT END
+                       MOVE 'Y' TO WS-EOF
+               END-READ
+           END-PERFORM.
+           
+           PERFORM 2200-SUBTOTAL-BREAK.
+       
        2100-WRITE-DETAIL.
-           ADD 1 TO WS-LINE-COUNT
-           IF WS-LINE-COUNT > WS-LINES-PER-PAGE
-               PERFORM 1100-PAGE-HEADER
+           IF WS-LINE-COUNT > 55
+               PERFORM 2300-WRITE-HEADING
            END-IF
-           MOVE ACCT-NO TO RPT-ACCT-NO
-           MOVE ACCT-NAME TO RPT-ACCT-NAME
-           MOVE ACCT-BALANCE TO RPT-BALANCE
-           WRITE RPT-RECORD FROM RPT-DETAIL-LINE.
-
-       3000-FINALIZE.
-           MOVE WS-ACCT-COUNT TO RPT-ACCT-CNT
-           MOVE WS-GRAND-TOTAL TO RPT-TOTAL-AMT
-           WRITE RPT-RECORD FROM RPT-TOTAL-LINE
-               AFTER 2.
-
-       9000-TERM.
-           CLOSE ACCT-FILE
+           
+           MOVE TXN-ACCT TO WS-DTL-ACCT
+           MOVE TXN-DATE TO WS-DTL-DATE
+           MOVE TXN-TYPE TO WS-DTL-TYPE
+           MOVE TXN-AMOUNT TO WS-DTL-AMOUNT
+           
+           WRITE RPT-RECORD FROM WS-DETAIL-LINE
+               AFTER ADVANCING 1 LINES
+           ADD 1 TO WS-LINE-COUNT.
+       
+       2200-SUBTOTAL-BREAK.
+           IF WS-SUBTOTAL NOT = 0
+               MOVE WS-SUBTOTAL TO WS-SUB-AMOUNT
+               WRITE RPT-RECORD FROM WS-SUBTOTAL-LINE
+                   AFTER ADVANCING 2 LINES
+               ADD 2 TO WS-LINE-COUNT
+               MOVE 0 TO WS-SUBTOTAL
+           END-IF.
+       
+       2300-WRITE-HEADING.
+           ADD 1 TO WS-PAGE-COUNT
+           MOVE WS-PAGE-COUNT TO WS-RPT-PAGE
+           MOVE 0 TO WS-LINE-COUNT
+           
+           WRITE RPT-RECORD FROM WS-HEADING-1
+               AFTER ADVANCING PAGE
+           WRITE RPT-RECORD FROM WS-HEADING-2
+           WRITE RPT-RECORD FROM WS-HEADING-3
+           WRITE RPT-RECORD FROM WS-COLUMN-HDR
+               AFTER ADVANCING 2 LINES
+           ADD 5 TO WS-LINE-COUNT.
+       
+       3000-TERM.
+           MOVE WS-GRAND-TOTAL TO WS-TOT-AMOUNT
+           WRITE RPT-RECORD FROM WS-TOTAL-LINE
+               AFTER ADVANCING 2 LINES
+           
+           CLOSE TXN-FILE
            CLOSE RPT-FILE
-           DISPLAY '報表產生完成'
-           DISPLAY '總筆數: ' WS-ACCT-COUNT
-           DISPLAY '總餘額: ' WS-GRAND-TOTAL.
+           DISPLAY 'Report Complete'
+           DISPLAY 'Records: ' WS-TXN-COUNT.
 ```
 
 ---
 
-## BA 實務應用
+## 四、總結
 
-### 報表需求確認
+### 本課程重點回顧
 
-| 問題 | 目的 |
-|------|------|
-| 「報表用途是什麼？」 | 確認報表類型 |
-| 「需要哪些欄位？」 | 設計報表結構 |
-| 「排序方式是什麼？」 | 確認排序鍵 |
-| 「是否需要分組小計？」 | 確認控制中斷 |
-| 「每頁幾行？」 | 設定分頁邏輯 |
+✅ **報表結構**: 標題、欄位標題、明細、小計、總計
 
-### 報表測試重點
+✅ **換頁控制**: AFTER ADVANCING PAGE, 行數計數
 
-```
-□ 標題正確性
-□ 頁碼連續性
-□ 分頁位置正確
-□ 明細資料正確
-□ 小計計算正確
-□ 總計計算正確
-□ 格式對齊正確
-```
+✅ **控制中斷**: Key 變化時產生小計
+
+✅ **報表設計**: 欄位對齊、格式控制、頁碼
 
 ---
 
-## 練習題
-
-### 題目 1
-設計一個交易明細報表的記錄結構，包含：交易日期、時間、帳號、交易類型、金額、餘額。
-
-### 題目 2
-說明控制中斷的用途和實現方式。
-
-### 題目 3
-設計分頁邏輯，每頁 50 行，包含頁首和頁尾。
-
----
-
-## 重點回顧
-
-| 要素 | 說明 |
-|------|------|
-| Report Header | 報表標題 |
-| Page Header | 頁首資訊 |
-| Column Header | 欄位標題 |
-| Detail Line | 明細資料 |
-| Control Break | 分組小計 |
-| Report Footer | 報表總計 |
-
----
-
-## 延伸閱讀
-
-- [Lesson 3-3：JCL 基本結構](lesson-3-3-jcl-basic.md)
-- [Lesson 4-4：對帳與報表生成](lesson-4-4-reconciliation.md)
+*課程版本: 1.0 | 更新日期: 2026-04-12*

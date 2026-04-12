@@ -53,68 +53,68 @@
 | [DATA DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 資料定義 |
 | [PROCEDURE DIVISION](lessons/lesson-2-1-cobol-divisions.md#) | 程式邏輯 |
 
-#### [Lesson 2-2：變數宣告與 PIC 子句](lessons/lesson-2-2-pic-clause.md)
+#### [Lesson 2-2：變數宣告與 PIC 子句](lessons/lesson-2-2-pic-clause.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| PIC 子句 | 資料格式定義 |
-| 常用格式 | X、9、S、V |
+| [PIC 子句](lessons/lesson-2-2-pic-clause.md#) | 資料格式定義 |
+| [常用格式](lessons/lesson-2-2-pic-clause.md#) | X、9、S、V |
 
-#### [Lesson 2-3：Level Number 與資料結構](lessons/lesson-2-3-level-number.md)
-
-| 章節 | 內容 |
-|------|------|
-| Level Number | 01、05、10、49 |
-| 群組項目 | 階層資料結構 |
-
-#### [Lesson 2-4：COMP、COMP-3、Packed Decimal](lessons/lesson-2-4-comp-usage.md)
+#### [Lesson 2-3：Level Number 與資料結構](lessons/lesson-2-3-level-number.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| COMP | 二進位格式 |
-| COMP-3 | 壓縮十進位 |
+| [Level Number](lessons/lesson-2-3-level-number.md#) | 01、05、10、49 |
+| [群組項目](lessons/lesson-2-3-level-number.md#) | 階層資料結構 |
 
-#### [Lesson 2-5：流程控制：IF、EVALUATE、PERFORM](lessons/lesson-2-5-flow-control.md)
-
-| 章節 | 內容 |
-|------|------|
-| IF 判斷 | 條件分支 |
-| EVALUATE | 多條件判斷 |
-| PERFORM | 迴圈與副程式 |
-
-#### [Lesson 2-6：COPYBOOK 與程式碼複用](lessons/lesson-2-6-copybook.md)
+#### [Lesson 2-4：COMP、COMP-3、Packed Decimal](lessons/lesson-2-4-comp-usage.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| COPYBOOK 概念 | 程式碼共用 |
-| COPY 語句 | 引用方式 |
+| [COMP](lessons/lesson-2-4-comp-usage.md#) | 二進位格式 |
+| [COMP-3](lessons/lesson-2-4-comp-usage.md#) | 壓縮十進位 |
 
-#### [Lesson 2-7：呼叫外部程式 (CALL)](lessons/lesson-2-7-call-statement.md)
-
-| 章節 | 內容 |
-|------|------|
-| CALL 語句 | 程式呼叫 |
-| 參數傳遞 | BY VALUE/REFERENCE |
-
-#### [Lesson 2-8：錯誤處理與檔案狀態碼](lessons/lesson-2-8-error-handling.md)
+#### [Lesson 2-5：流程控制：IF、EVALUATE、PERFORM](lessons/lesson-2-5-flow-control.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| 檔案狀態碼 | FILE-STATUS |
-| 錯誤處理 | 異常處理機制 |
+| [IF 判斷](lessons/lesson-2-5-flow-control.md#) | 條件分支 |
+| [EVALUATE](lessons/lesson-2-5-flow-control.md#) | 多條件判斷 |
+| [PERFORM](lessons/lesson-2-5-flow-control.md#) | 迴圈與副程式 |
+
+#### [Lesson 2-6：COPYBOOK 與程式碼複用](lessons/lesson-2-6-copybook.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [COPYBOOK 概念](lessons/lesson-2-6-copybook.md#) | 程式碼共用 |
+| [COPY 語句](lessons/lesson-2-6-copybook.md#) | 引用方式 |
+
+#### [Lesson 2-7：呼叫外部程式 (CALL)](lessons/lesson-2-7-call-statement.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [CALL 語句](lessons/lesson-2-7-call-statement.md#) | 程式呼叫 |
+| [參數傳遞](lessons/lesson-2-7-call-statement.md#) | BY VALUE/REFERENCE |
+
+#### [Lesson 2-8：錯誤處理與檔案狀態碼](lessons/lesson-2-8-error-handling.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [檔案狀態碼](lessons/lesson-2-8-error-handling.md#) | FILE-STATUS |
+| [錯誤處理](lessons/lesson-2-8-error-handling.md#) | 異常處理機制 |
 
 ---
 
 ### 第 3 階段：檔案、批次、JCL、報表
 
-#### [Lesson 3-1：Sequential File 與 VSAM File](lessons/lesson-3-1-file-types.md)
+#### [Lesson 3-1：Sequential File 與 VSAM File](lessons/lesson-3-1-file-types.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| Sequential File | 循序檔 |
-| VSAM File | 虛擬儲存存取方法 |
+| [Sequential File](lessons/lesson-3-1-file-types.md#) | 循序檔 |
+| [VSAM File](lessons/lesson-3-1-file-types.md#) | 虛擬儲存存取方法 |
 
-#### [Lesson 3-2：檔案操作：READ、WRITE、REWRITE](lessons/lesson-3-2-file-operations.md)
+#### [Lesson 3-2：檔案操作：READ、WRITE、REWRITE](lessons/lesson-3-2-file-operations.md) ✅
 
 | 章節 | 內容 |
 |------|------|
@@ -122,47 +122,47 @@
 | WRITE | 寫入記錄 |
 | REWRITE | 更新記錄 |
 
-#### [Lesson 3-3：JCL 基本結構](lessons/lesson-3-3-jcl-basic.md)
+#### [Lesson 3-3：JCL 基本結構](lessons/lesson-3-3-jcl-basic.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| JCL 結構 | JOB、EXEC、DD |
-| 常用參數 | 實務範例 |
+| [JCL 結構](lessons/lesson-3-3-jcl-basic.md#) | JOB、EXEC、DD |
+| [常用參數](lessons/lesson-3-3-jcl-basic.md#) | 實務範例 |
 
-#### [Lesson 3-4：Sort 與 Utility](lessons/lesson-3-4-sort-utility.md)
-
-| 章節 | 內容 |
-|------|------|
-| SORT Utility | 排序工具 |
-| 其他 Utility | 實用工具 |
-
-#### [Lesson 3-5：報表輸出流程](lessons/lesson-3-5-report-output.md)
+#### [Lesson 3-4：Sort 與 Utility](lessons/lesson-3-4-sort-utility.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| 報表格式 | 列印格式設計 |
-| 輸出流程 | 報表產生方式 |
+| [SORT Utility](lessons/lesson-3-4-sort-utility.md#) | 排序工具 |
+| [其他 Utility](lessons/lesson-3-4-sort-utility.md#) | 實用工具 |
 
-#### [Lesson 3-6：MQ/Socket 通訊概念](lessons/lesson-3-6-mq-socket.md)
-
-| 章節 | 內容 |
-|------|------|
-| MQ 概念 | 訊息佇列 |
-| Socket 通訊 | 即時通訊 |
-
-#### [Lesson 3-7：DB2 基本概念](lessons/lesson-3-7-db2-basic.md)
+#### [Lesson 3-5：報表輸出流程](lessons/lesson-3-5-report-output.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| DB2 SQL | 資料庫操作 |
-| Embedded SQL | COBOL 內嵌 SQL |
+| [報表格式](lessons/lesson-3-5-report-output.md#) | 列印格式設計 |
+| [輸出流程](lessons/lesson-3-5-report-output.md#) | 報表產生方式 |
 
-#### [Lesson 3-8：CICS 線上交易入門](lessons/lesson-3-8-cics-intro.md)
+#### [Lesson 3-6：MQ/Socket 通訊概念](lessons/lesson-3-6-mq-socket.md) ✅
 
 | 章節 | 內容 |
 |------|------|
-| CICS 架構 | 線上交易處理 |
-| 基本操作 | 實務應用 |
+| [MQ 概念](lessons/lesson-3-6-mq-socket.md#) | 訊息佇列 |
+| [Socket 通訊](lessons/lesson-3-6-mq-socket.md#) | 即時通訊 |
+
+#### [Lesson 3-7：DB2 基本概念](lessons/lesson-3-7-db2-basic.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [DB2 SQL](lessons/lesson-3-7-db2-basic.md#) | 資料庫操作 |
+| [Embedded SQL](lessons/lesson-3-7-db2-basic.md#) | COBOL 內嵌 SQL |
+
+#### [Lesson 3-8：CICS 線上交易入門](lessons/lesson-3-8-cics-intro.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [CICS 架構](lessons/lesson-3-8-cics-intro.md#) | 線上交易處理 |
+| [基本操作](lessons/lesson-3-8-cics-intro.md#) | 實務應用 |
 
 ---
 
@@ -338,10 +338,12 @@
 ## 📊 學習進度
 
 ```
-已完成：22 / 28 課程 (79%)
+已完成：28 / 28 課程 (100%)
 
-███████████████████████████░░░░░░░░░ 79%
+████████████████████████████████████ 100%
 ```
+
+🎉 所有課程已完成！
 
 ---
 

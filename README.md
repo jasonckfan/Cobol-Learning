@@ -26,25 +26,25 @@
 - [x] Lesson 1-3：z/OS、Dataset、PDS、Member 概念 ✅
 - [x] Lesson 1-4：Job、Step、Program、Procedure 關係 ✅
 
-### 第 2 階段：COBOL 程式結構與資料定義
-- [ ] Lesson 2-1：COBOL 四大 DIVISION
-- [ ] Lesson 2-2：變數宣告與 PIC 子句
-- [ ] Lesson 2-3：Level Number 與資料結構
-- [ ] Lesson 2-4：COMP、COMP-3、Packed Decimal
-- [ ] Lesson 2-5：流程控制：IF、EVALUATE、PERFORM
-- [ ] Lesson 2-6：COPYBOOK 與程式碼複用 🔜
-- [ ] Lesson 2-7：呼叫外部程式 (CALL) 🔜
-- [ ] Lesson 2-8：錯誤處理與檔案狀態碼 🔜
+### 第 2 階段：COBOL 程式結構與資料定義 ✅
+- [x] Lesson 2-1：COBOL 四大 DIVISION ✅
+- [x] Lesson 2-2：變數宣告與 PIC 子句 ✅
+- [x] Lesson 2-3：Level Number 與資料結構 ✅
+- [x] Lesson 2-4：COMP、COMP-3、Packed Decimal ✅
+- [x] Lesson 2-5：流程控制：IF、EVALUATE、PERFORM ✅
+- [x] Lesson 2-6：COPYBOOK 與程式碼複用 ✅
+- [x] Lesson 2-7：呼叫外部程式 (CALL) ✅
+- [x] Lesson 2-8：錯誤處理與檔案狀態碼 ✅
 
-### 第 3 階段：檔案、批次、JCL、報表
-- [ ] Lesson 3-1：Sequential File 與 VSAM File
-- [ ] Lesson 3-2：檔案操作：READ、WRITE、REWRITE
-- [ ] Lesson 3-3：JCL 基本結構
-- [ ] Lesson 3-4：Sort 與 Utility
-- [ ] Lesson 3-5：報表輸出流程
-- [ ] Lesson 3-6：MQ/Socket 通訊概念 🔜
-- [ ] Lesson 3-7：DB2 基本概念 🔜
-- [ ] Lesson 3-8：CICS 線上交易入門 🔜
+### 第 3 階段：檔案、批次、JCL、報表 ✅
+- [x] Lesson 3-1：Sequential File 與 VSAM File ✅
+- [x] Lesson 3-2：檔案操作：READ、WRITE、REWRITE ✅
+- [x] Lesson 3-3：JCL 基本結構 ✅
+- [x] Lesson 3-4：Sort 與 Utility ✅
+- [x] Lesson 3-5：報表輸出流程 ✅
+- [x] Lesson 3-6：MQ/Socket 通訊概念 ✅
+- [x] Lesson 3-7：DB2 基本概念 ✅
+- [x] Lesson 3-8：CICS 線上交易入門 ✅
 
 ### 第 4 階段：銀行實務案例 ✅
 - [x] Lesson 4-1：CLM 資金池管理系統架構 ✅

@@ -1,331 +1,303 @@
-# Lesson 3-7：DB2 基本概念
+# Lesson 3-7: DB2 基本概念
+
+> 理解 Mainframe 上的關聯式資料庫基礎
+
+---
 
 ## 學習目標
 
-- 理解 COBOL 與 DB2 的整合方式
-- 掌握 SQL 在 COBOL 中的使用
-- 了解 Cursor 操作和交易管理
+- 理解 DB2 在 Mainframe 上的角色
+- 掌握基本 SQL 語法
+- 了解 COBOL 與 DB2 的整合
+- 掌握 BA 在資料庫設計時的關注點
 
 ---
 
-## DB2 在銀行系統中的角色
+## 一、DB2 概覽
 
-DB2 是 IBM 的關聯式資料庫，在銀行 Mainframe 系統中：
-- 存放客戶資料、交易記錄
-- 支援線上交易的即時查詢
-- 提供批次處理的資料存取
+### 1.1 什麼是 DB2？
 
----
+DB2 是 IBM 的關聯式資料庫管理系統 (RDBMS)，在 Mainframe 上廣泛用於儲存結構化資料。
 
-## SQL in COBOL
-
-### 基本結構
-
-```cobol
-       EXEC SQL
-           SQL敘述
-       END-EXEC.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              DB2 在銀行架構中的位置                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  應用程式層                                              │  │
+│   │  - CICS 線上交易                                         │  │
+│   │  - 批次作業                                              │  │
+│   │  - 查詢報表                                              │  │
+│   └────────────────────────┬────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  資料庫介面層                                            │  │
+│   │  - SQL                                                   │  │
+│   │  - Embedded SQL in COBOL                                 │  │
+│   └────────────────────────┬────────────────────────────────┘  │
+│                              ↓                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  DB2 Database Server                                     │  │
+│   │  - Tables (資料表)                                       │  │
+│   │  - Indexes (索引)                                        │  │
+│   │  - Buffer Pools (緩衝區)                                 │  │
+│   │  - Logs (日誌)                                           │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 資料定義
+### 1.2 DB2 核心概念
+
+| 概念 | 說明 | 範例 |
+|------|------|------|
+| **Table** | 資料表 | ACCOUNT_MASTER |
+| **Column** | 欄位 | ACCT_NUMBER, BALANCE |
+| **Row** | 資料列 | 一筆帳戶記錄 |
+| **Index** | 索引 | ACCT_NUMBER_IDX |
+| **Schema** | 綱要 | 資料庫物件集合 |
+| **Tablespace** | 表空間 | 儲存資料的實體空間 |
+
+---
+
+## 二、基本 SQL 語法
+
+### 2.1 SELECT 查詢
+
+```sql
+-- 基本查詢
+SELECT ACCT_NUMBER, ACCT_NAME, BALANCE
+FROM ACCOUNT_MASTER
+WHERE ACCT_STATUS = 'ACTIVE';
+
+-- 條件查詢
+SELECT *
+FROM ACCOUNT_MASTER
+WHERE BALANCE > 10000
+  AND ACCT_TYPE = 'SAVINGS';
+
+-- 排序
+SELECT ACCT_NUMBER, BALANCE
+FROM ACCOUNT_MASTER
+ORDER BY BALANCE DESC;
+
+-- 分組統計
+SELECT ACCT_TYPE, COUNT(*), AVG(BALANCE)
+FROM ACCOUNT_MASTER
+GROUP BY ACCT_TYPE;
+
+-- 連接查詢
+SELECT A.ACCT_NUMBER, C.CUST_NAME, A.BALANCE
+FROM ACCOUNT_MASTER A
+JOIN CUSTOMER_MASTER C
+  ON A.CUST_ID = C.CUST_ID;
+```
+
+### 2.2 INSERT、UPDATE、DELETE
+
+```sql
+-- 新增資料
+INSERT INTO ACCOUNT_MASTER 
+(ACCT_NUMBER, CUST_ID, ACCT_TYPE, BALANCE, OPEN_DATE)
+VALUES ('123456789012', 'C001', 'SAVINGS', 1000.00, '2026-04-12');
+
+-- 更新資料
+UPDATE ACCOUNT_MASTER
+SET BALANCE = BALANCE + 500,
+    LAST_UPDATE = CURRENT_TIMESTAMP
+WHERE ACCT_NUMBER = '123456789012';
+
+-- 刪除資料
+DELETE FROM ACCOUNT_MASTER
+WHERE ACCT_NUMBER = '123456789012';
+```
+
+---
+
+## 三、COBOL 與 DB2 整合
+
+### 3.1 Embedded SQL
 
 ```cobol
+       *---- COBOL 中的 SQL 範例 ---------------------------------
+       
        WORKING-STORAGE SECTION.
-       EXEC SQL INCLUDE SQLCA END-EXEC.
        
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
-       01 WS-ACCT-NO           PIC X(16).
-       01 WS-ACCT-NAME         PIC X(40).
-       01 WS-ACCT-BALANCE      PIC S9(11)V99 COMP-3.
-       EXEC SQL END DECLARE SECTION END-EXEC.
-```
-
----
-
-## 基本 SQL 操作
-
-### SELECT - 查詢
-
-```cobol
-      * 查詢單筆記錄
-       MOVE '1234567890123456' TO WS-ACCT-NO.
-       
+       * SQL 通訊區
        EXEC SQL
-           SELECT ACCT_NAME, ACCT_BALANCE
-           INTO :WS-ACCT-NAME, :WS-ACCT-BALANCE
-           FROM ACCT_MASTER
-           WHERE ACCT_NO = :WS-ACCT-NO
+           INCLUDE SQLCA
        END-EXEC.
        
-       IF SQLCODE = 0
-           DISPLAY '戶名: ' WS-ACCT-NAME
-           DISPLAY '餘額: ' WS-ACCT-BALANCE
-       ELSE IF SQLCODE = 100
-           DISPLAY '找不到該帳號'
-       ELSE
-           DISPLAY '查詢錯誤: ' SQLCODE
-       END-IF.
-```
-
-### INSERT - 新增
-
-```cobol
+       * 宣告游標
        EXEC SQL
-           INSERT INTO ACCT_MASTER
-               (ACCT_NO, ACCT_NAME, ACCT_BALANCE, ACCT_STATUS)
-           VALUES
-               (:WS-ACCT-NO, :WS-ACCT-NAME, :WS-ACCT-BALANCE, 'A')
+           DECLARE C1 CURSOR FOR
+           SELECT ACCT_NUMBER, ACCT_NAME, BALANCE
+           FROM ACCOUNT_MASTER
+           WHERE ACCT_STATUS = 'ACTIVE'
        END-EXEC.
        
-       IF SQLCODE = 0
-           DISPLAY '新增成功'
-       ELSE
-           DISPLAY '新增失敗: ' SQLCODE
-       END-IF.
-```
-
-### UPDATE - 更新
-
-```cobol
-       EXEC SQL
-           UPDATE ACCT_MASTER
-           SET ACCT_BALANCE = ACCT_BALANCE + :WS-AMOUNT,
-               LAST_UPD_DATE = CURRENT DATE
-           WHERE ACCT_NO = :WS-ACCT-NO
-       END-EXEC.
-```
-
-### DELETE - 刪除
-
-```cobol
-       EXEC SQL
-           DELETE FROM ACCT_MASTER
-           WHERE ACCT_NO = :WS-ACCT-NO
-       END-EXEC.
-```
-
----
-
-## Cursor 操作
-
-當需要處理多筆記錄時，使用 Cursor 逐筆讀取。
-
-### Cursor 宣告與操作流程
-
-```cobol
-      * 1. 宣告 Cursor
-       EXEC SQL
-           DECLARE ACCT_CURSOR CURSOR FOR
-               SELECT ACCT_NO, ACCT_NAME, ACCT_BALANCE
-               FROM ACCT_MASTER
-               WHERE ACCT_STATUS = 'A'
-               ORDER BY ACCT_NO
-       END-EXEC.
-
-      * 2. 開啟 Cursor
-       EXEC SQL
-           OPEN ACCT_CURSOR
-       END-EXEC.
-
-      * 3. 讀取記錄（迴圈）
-       PERFORM UNTIL SQLCODE NOT = 0
+       * 主變數宣告
+       01  HV-ACCT-NUMBER     PIC X(12).
+       01  HV-ACCT-NAME       PIC X(40).
+       01  HV-BALANCE         PIC S9(13)V99 COMP-3.
+       01  HV-ROW-COUNT       PIC S9(9) COMP.
+       
+       PROCEDURE DIVISION.
+       
+       * 連接資料庫
+       1000-CONNECT.
            EXEC SQL
-               FETCH ACCT_CURSOR
-               INTO :WS-ACCT-NO, :WS-ACCT-NAME, :WS-ACCT-BALANCE
-           END-EXEC
-           
-           IF SQLCODE = 0
-               PERFORM PROCESS-ACCOUNT
-           END-IF
-       END-PERFORM.
-
-      * 4. 關閉 Cursor
-       EXEC SQL
-           CLOSE ACCT_CURSOR
-       END-EXEC.
-```
-
-### 完整範例
-
-```cobol
-       2000-PROCESS-ALL-ACCOUNTS.
-      *    開啟 Cursor
-           EXEC SQL
-               OPEN ACCT_CURSOR
-           END-EXEC
+               CONNECT TO DB2PROD
+           END-EXEC.
            
            IF SQLCODE NOT = 0
-               DISPLAY '開啟 Cursor 失敗: ' SQLCODE
+               DISPLAY 'Connection failed: ' SQLCODE
                STOP RUN
-           END-IF
+           END-IF.
+       
+       * 單筆查詢
+       2000-SELECT-SINGLE.
+           MOVE '123456789012' TO HV-ACCT-NUMBER.
            
-      *    讀取並處理每一筆
-           MOVE 0 TO WS-PROC-COUNT
+           EXEC SQL
+               SELECT ACCT_NAME, BALANCE
+               INTO :HV-ACCT-NAME, :HV-BALANCE
+               FROM ACCOUNT_MASTER
+               WHERE ACCT_NUMBER = :HV-ACCT-NUMBER
+           END-EXEC.
+           
+           EVALUATE SQLCODE
+               WHEN 0
+                   DISPLAY 'Account: ' HV-ACCT-NAME
+                   DISPLAY 'Balance: ' HV-BALANCE
+               WHEN +100
+                   DISPLAY 'Account not found'
+               WHEN OTHER
+                   DISPLAY 'SQL Error: ' SQLCODE
+           END-EVALUATE.
+       
+       * 多筆查詢 (使用游標)
+       3000-SELECT-MULTIPLE.
+           EXEC SQL
+               OPEN C1
+           END-EXEC.
            
            PERFORM UNTIL SQLCODE NOT = 0
                EXEC SQL
-                   FETCH ACCT_CURSOR
-                   INTO :WS-ACCT-NO, 
-                        :WS-ACCT-NAME, 
-                        :WS-ACCT-BALANCE
+                   FETCH C1
+                   INTO :HV-ACCT-NUMBER, 
+                        :HV-ACCT-NAME, 
+                        :HV-BALANCE
                END-EXEC
                
-               EVALUATE SQLCODE
-                   WHEN 0
-                       PERFORM 2100-PROCESS-ONE
-                       ADD 1 TO WS-PROC-COUNT
-                   WHEN 100
-                       DISPLAY '所有記錄處理完成'
-                   WHEN OTHER
-                       DISPLAY 'Fetch 錯誤: ' SQLCODE
-               END-EVALUATE
-           END-PERFORM
+               IF SQLCODE = 0
+                   PERFORM PROCESS-RECORD
+               END-IF
+           END-PERFORM.
            
-      *    關閉 Cursor
            EXEC SQL
-               CLOSE ACCT_CURSOR
+               CLOSE C1
+           END-EXEC.
+       
+       * 更新資料
+       4000-UPDATE.
+           MOVE '123456789012' TO HV-ACCT-NUMBER.
+           MOVE 1500.00 TO HV-BALANCE.
+           
+           EXEC SQL
+               UPDATE ACCOUNT_MASTER
+               SET BALANCE = :HV-BALANCE,
+                   LAST_UPDATE = CURRENT_TIMESTAMP
+               WHERE ACCT_NUMBER = :HV-ACCT-NUMBER
+           END-EXEC.
+           
+           IF SQLCODE = 0
+               DISPLAY 'Update successful'
+               DISPLAY 'Rows updated: ' SQLERRD(3)
+           ELSE
+               DISPLAY 'Update failed: ' SQLCODE
+           END-IF.
+       
+       * 斷開連接
+       9000-DISCONNECT.
+           EXEC SQL
+               COMMIT
+           END-EXEC.
+           
+           EXEC SQL
+               DISCONNECT CURRENT
            END-EXEC.
 ```
 
+### 3.2 SQLCODE 說明
+
+| SQLCODE | 意義 | 說明 |
+|---------|------|------|
+| **0** | 成功 | 操作成功完成 |
+| **+100** | 未找到資料 | 查詢無結果 |
+| **-1** | 錯誤 | 一般錯誤 |
+| **-104** | 語法錯誤 | SQL 語法有誤 |
+| **-180** | 日期格式錯誤 | 日期轉換失敗 |
+| **-181** | 字串格式錯誤 | 字串轉換失敗 |
+| **-204** | 物件不存在 | 資料表或欄位不存在 |
+| **-803** | 重複值 | 違反唯一性限制 |
+| **-911** | 死結 | 資源被鎖定 |
+
 ---
 
-## 交易管理
+## 四、BA 資料庫設計考量
 
-### COMMIT 與 ROLLBACK
+### 4.1 資料表設計檢查清單
 
-```cobol
-      * 確認交易
-       EXEC SQL
-           COMMIT
-       END-EXEC.
-
-      * 回滾交易
-       EXEC SQL
-           ROLLBACK
-       END-EXEC.
 ```
-
-### 交易範例
-
-```cobol
-       3000-TRANSFER-MONEY.
-      *    開始交易
-      *    扣除轉出帳戶
-           EXEC SQL
-               UPDATE ACCT_MASTER
-               SET ACCT_BALANCE = ACCT_BALANCE - :WS-AMOUNT
-               WHERE ACCT_NO = :WS-FROM-ACCT
-           END-EXEC
-           
-           IF SQLCODE NOT = 0
-               EXEC SQL ROLLBACK END-EXEC
-               DISPLAY '轉出失敗'
-               EXIT PARAGRAPH
-           END-IF
-           
-      *    加入轉入帳戶
-           EXEC SQL
-               UPDATE ACCT_MASTER
-               SET ACCT_BALANCE = ACCT_BALANCE + :WS-AMOUNT
-               WHERE ACCT_NO = :WS-TO-ACCT
-           END-EXEC
-           
-           IF SQLCODE NOT = 0
-               EXEC SQL ROLLBACK END-EXEC
-               DISPLAY '轉入失敗'
-               EXIT PARAGRAPH
-           END-IF
-           
-      *    確認交易
-           EXEC SQL
-               COMMIT
-           END-EXEC
-           
-           DISPLAY '轉帳成功'.
+┌─────────────────────────────────────────────────────────────────┐
+│              資料表設計檢查清單                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  □ 欄位設計                                                     │
+│    ├── 資料類型是否適當？                                       │
+│    ├── 長度是否足夠？                                           │
+│    ├── 是否允許 NULL？                                          │
+│    └── 預設值是否合理？                                         │
+│                                                                 │
+│  □ 索引設計                                                     │
+│    ├── 主鍵是否定義？                                           │
+│    ├── 查詢欄位是否有索引？                                     │
+│    ├── 索引是否過多？                                           │
+│    └── 複合索引順序是否正確？                                   │
+│                                                                 │
+│  □ 限制條件                                                     │
+│    ├── 唯一性限制 (Unique)                                      │
+│    ├── 外鍵關聯 (Foreign Key)                                   │
+│    ├── 檢查條件 (Check)                                         │
+│    └── 預設值 (Default)                                         │
+│                                                                 │
+│  □ 效能考量                                                     │
+│    ├── 預估資料量                                               │
+│    ├── 成長率預估                                               │
+│    ├── 查詢頻率分析                                             │
+│    └── 維護作業規劃                                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## SQLCA 結構
+## 五、總結
 
-SQLCA（SQL Communication Area）存放 SQL 執行結果。
+### 本課程重點回顧
 
-```cobol
-       01 SQLCA.
-          05 SQLCAID           PIC X(8).
-          05 SQLCABC           PIC S9(9) COMP.
-          05 SQLCODE           PIC S9(9) COMP.  *> 返回碼
-          05 SQLERRM.
-             10 SQLERRML       PIC S9(4) COMP.
-             10 SQLERRMC       PIC X(70).
-          05 SQLERRP           PIC X(8).
-          05 SQLERRD           PIC S9(9) COMP OCCURS 6 TIMES.
-          05 SQLWARN.
-             10 SQLWARN0       PIC X.
-             10 SQLWARN1       PIC X.
-             ...
-          05 SQLSTATE          PIC X(5).
-```
+✅ **DB2**: Mainframe 關聯式資料庫
 
-### 常見 SQLCODE
+✅ **SQL**: SELECT, INSERT, UPDATE, DELETE
 
-| SQLCODE | 說明 |
-|---------|------|
-| 0 | 執行成功 |
-| 100 | 找不到記錄（EOF） |
-| -803 | 主鍵重複 |
-| -530 | 外鍵限制違規 |
-| -180 | 日期/時間格式錯誤 |
-| -305 | NULL 值 |
+✅ **Embedded SQL**: COBOL 中的 SQL 語法
+
+✅ **SQLCODE**: 執行結果碼
+
+✅ **BA 關注點**: 欄位設計、索引、限制條件
 
 ---
 
-## BA 實務應用
-
-### 需求確認重點
-
-| 問題 | 目的 |
-|------|------|
-| 「這個查詢會返回多少筆？」 | 確認是否需要 Cursor |
-| 「是否需要更新多個表？」 | 確認交易管理需求 |
-| 「效能要求是多少？」 | 評估 SQL 優化需求 |
-
-### 效能考量
-
-| 問題 | 建議 |
-|------|------|
-| 查詢太慢 | 檢查索引、SQL 優化 |
-| Cursor 太慢 | 考慮批量處理 |
-| 鎖定衝突 | 調整隔離級別 |
-
----
-
-## 練習題
-
-### 題目 1
-設計一個 SQL 查詢，找出餘額大於 100,000 的所有帳戶。
-
-### 題目 2
-說明 COMMIT 和 ROLLBACK 的用途和時機。
-
-### 題目 3
-設計一個 Cursor 處理流程，逐筆讀取並更新帳戶餘額。
-
----
-
-## 重點回顧
-
-| 概念 | 說明 |
-|------|------|
-| EXEC SQL | COBOL 中嵌入 SQL |
-| Cursor | 逐筆處理多筆記錄 |
-| COMMIT | 確認交易 |
-| ROLLBACK | 回滾交易 |
-| SQLCODE | SQL 執行結果碼 |
-
----
-
-## 延伸閱讀
-
-- [Lesson 3-8：CICS 線上交易入門](lesson-3-8-cics-intro.md)
-- [Lesson 4-1：CLM 資金池管理系統架構](lesson-4-1-clm-system.md)
+*課程版本: 1.0 | 更新日期: 2026-04-12*

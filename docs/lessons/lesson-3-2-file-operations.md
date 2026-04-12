@@ -1,533 +1,453 @@
-# Lesson 3-2：檔案操作：READ、WRITE、REWRITE
+# Lesson 3-2: 檔案操作 - READ、WRITE、REWRITE
+
+> 掌握 COBOL 檔案操作的基本指令
+
+---
 
 ## 學習目標
 
-- 掌握 COBOL 檔案操作指令
-- 理解不同檔案類型的操作方式
-- 能夠閱讀和設計檔案處理邏輯
+- 掌握 OPEN、CLOSE 檔案操作
+- 理解 READ 的各種形式與選項
+- 學會 WRITE、REWRITE 的使用
+- 了解 DELETE、START 等特殊操作
 
 ---
 
-## 檔案操作概述
+## 一、檔案開關操作
 
-COBOL 提供以下檔案操作指令：
-
-| 指令 | 功能 | 適用檔案類型 |
-|------|------|-------------|
-| OPEN | 開啟檔案 | 所有 |
-| CLOSE | 關閉檔案 | 所有 |
-| READ | 讀取記錄 | 所有 |
-| WRITE | 寫入記錄 | 所有 |
-| REWRITE | 更新記錄 | VSAM (I-O 模式) |
-| DELETE | 刪除記錄 | VSAM (I-O 模式) |
-| START | 定位記錄 | VSAM |
-
----
-
-## OPEN 敘述
-
-### 開啟模式
-
-| 模式 | 說明 | 使用情境 |
-|------|------|----------|
-| INPUT | 唯讀 | 讀取檔案 |
-| OUTPUT | 唯寫（覆蓋） | 建立新檔案 |
-| I-O | 讀寫 | 更新現有檔案 |
-| EXTEND | 追加 | 在檔案末尾追加記錄 |
-
-### 語法
+### 1.1 OPEN 語句
 
 ```cobol
-       OPEN INPUT 檔案名稱.
-       OPEN OUTPUT 檔案名稱.
-       OPEN I-O 檔案名稱.
-       OPEN EXTEND 檔案名稱.
+       *---- OPEN 語句語法 ----------------------------------------
+       
+       * 開啟輸入檔
+       OPEN INPUT file-name.
+       
+       * 開啟輸出檔 (會建立新檔或覆蓋舊檔)
+       OPEN OUTPUT file-name.
+       
+       * 開啟擴充檔 (在結尾新增)
+       OPEN EXTEND file-name.
+       
+       * 開啟輸入輸出檔 (可讀可寫)
+       OPEN I-O file-name.
+       
+       * 同時開啟多個檔案
+       OPEN INPUT file-1 file-2
+            OUTPUT file-3
+            I-O file-4.
 ```
 
-### 範例
+### 1.2 CLOSE 語句
 
 ```cobol
-       1000-INIT.
-           OPEN INPUT ACCT-FILE
-           IF WS-ACCT-STATUS NOT = '00'
-               DISPLAY 'ERROR: 無法開啟帳戶檔案'
-               STOP RUN
-           END-IF
-
-           OPEN OUTPUT RPT-FILE
-           OPEN I-O MASTER-FILE.
+       *---- CLOSE 語句語法 ---------------------------------------
+       
+       * 基本關閉
+       CLOSE file-name.
+       
+       * 關閉多個檔案
+       CLOSE file-1 file-2 file-3.
+       
+       * 關閉並釋放鎖定 (VSAM)
+       CLOSE file-name WITH LOCK.
+       
+       * 關閉並重繞 (磁帶檔)
+       CLOSE file-name WITH REWIND.
+       
+       * 關閉不重繞 (磁帶檔)
+       CLOSE file-name NO REWIND.
 ```
 
 ---
 
-## CLOSE 敘述
+## 二、READ 操作
 
-### 語法
-
-```cobol
-       CLOSE 檔案名稱.
-```
-
-### 範例
+### 2.1 READ 基本語法
 
 ```cobol
-       9000-TERM.
-           CLOSE ACCT-FILE
-           CLOSE RPT-FILE
-           CLOSE MASTER-FILE.
-```
-
-> ⚠️ **重要**：程式結束前務必關閉所有檔案，否則可能導致資料遺失。
-
----
-
-## READ 敘述
-
-### Sequential File 讀取
-
-```cobol
-       READ 檔案名稱
+       *---- READ 基本語法 ----------------------------------------
+       
+       * 循序讀取 (Sequential)
+       READ file-name
            AT END
-               處理結束邏輯
-           NOT AT END
-               處理記錄邏輯
+               執行語句
        END-READ.
-```
-
-### 範例
-
-```cobol
-       READ ACCT-FILE
-           AT END
-               SET EOF-REACHED TO TRUE
-               DISPLAY '已讀取所有記錄'
-           NOT AT END
-               ADD 1 TO WS-RECORD-COUNT
-               PERFORM PROCESS-ACCT
-       END-READ.
-```
-
-### VSAM 隨機讀取（RANDOM）
-
-```cobol
-       *> 先設定鍵值
-       MOVE WS-SEARCH-ACCT TO ACCT-NO.
-
-       READ ACCT-MASTER
+       
+       * 隨機讀取 (Random - 需指定 Key)
+       READ file-name
+           KEY IS key-field
            INVALID KEY
-               DISPLAY '找不到該帳號'
+               執行語句
+           NOT INVALID KEY
+               執行語句
+       END-READ.
+       
+       * 讀取下一筆
+       READ file-name NEXT RECORD
+           AT END
+               執行語句
+       END-READ.
+       
+       * 讀取前一筆 (部分系統支援)
+       READ file-name PREVIOUS RECORD
+           AT END
+               執行語句
+       END-READ.
+```
+
+### 2.2 READ 範例
+
+```cobol
+       *---- READ 實務範例 ----------------------------------------
+       
+       * 範例 1: 循序讀取 Sequential File
+       OPEN INPUT CUSTOMER-FILE.
+       
+       PERFORM UNTIL WS-EOF
+           READ CUSTOMER-FILE
+               AT END
+                   MOVE 'Y' TO WS-EOF
+               NOT AT END
+                   PERFORM PROCESS-RECORD
+           END-READ
+       END-PERFORM.
+       
+       CLOSE CUSTOMER-FILE.
+       
+       * 範例 2: 隨機讀取 VSAM KSDS
+       OPEN I-O ACCOUNT-FILE.
+       
+       MOVE '123456789012' TO ACCT-NUMBER.
+       
+       READ ACCOUNT-FILE
+           KEY IS ACCT-NUMBER
+           INVALID KEY
+               DISPLAY 'Account not found'
                MOVE 'N' TO WS-FOUND-FLAG
            NOT INVALID KEY
-               DISPLAY '找到: ' ACCT-NAME
+               DISPLAY 'Account found: ' ACCT-NUMBER
                MOVE 'Y' TO WS-FOUND-FLAG
        END-READ.
-```
-
-### VSAM 循序讀取（SEQUENTIAL / DYNAMIC）
-
-```cobol
-       *> 讀取下一筆
-       READ ACCT-MASTER NEXT RECORD
-           AT END
-               SET EOF-REACHED TO TRUE
-           NOT AT END
-               PERFORM PROCESS-ACCT
-       END-READ.
-
-       *> 讀取上一筆（DYNAMIC 模式）
-       READ ACCT-MASTER PREVIOUS RECORD
-           AT END
-               DISPLAY '已在檔案開頭'
-           NOT AT END
-               PERFORM PROCESS-ACCT
+       
+       CLOSE ACCOUNT-FILE.
+       
+       * 範例 3: 讀取並鎖定 (防止其他程式修改)
+       READ ACCOUNT-FILE
+           KEY IS ACCT-NUMBER
+           LOCK
+           INVALID KEY
+               DISPLAY 'Account not found'
        END-READ.
 ```
 
 ---
 
-## WRITE 敘述
+## 三、WRITE 操作
 
-### Sequential File 寫入
-
-```cobol
-       WRITE 記錄名稱.
-```
-
-或從另一個資料區域寫入：
+### 3.1 WRITE 基本語法
 
 ```cobol
-       WRITE 記錄名稱 FROM 來源區域.
-```
-
-### 範例
-
-```cobol
-       *> 準備報表記錄
-       MOVE WS-ACCT-NO TO RPT-ACCT-NO.
-       MOVE WS-BALANCE TO RPT-BALANCE.
-
-       *> 寫入報表檔案
-       WRITE RPT-RECORD.
-
-       *> 或使用 FROM
-       WRITE RPT-RECORD FROM WS-REPORT-LINE.
-```
-
-### VSAM 寫入
-
-```cobol
-       *> 準備記錄
-       MOVE WS-NEW-ACCT TO ACCT-NO.
-       MOVE WS-NAME TO ACCT-NAME.
-
-       WRITE ACCT-RECORD
+       *---- WRITE 基本語法 ---------------------------------------
+       
+       * 基本寫入
+       WRITE record-name.
+       
+       * 從其他欄位寫入
+       WRITE record-name FROM source-field.
+       
+       * 寫入並指定 Key (VSAM)
+       WRITE record-name
            INVALID KEY
-               DISPLAY '鍵值重複或寫入失敗'
-               MOVE 'F' TO WS-WRITE-STATUS
-           NOT INVALID KEY
-               ADD 1 TO WS-INSERT-COUNT
-               MOVE 'S' TO WS-WRITE-STATUS
+               執行語句
        END-WRITE.
+       
+       * 寫入前進行 (Advancing - 報表用)
+       WRITE record-name
+           BEFORE ADVANCING n LINES.
+       
+       WRITE record-name
+           AFTER ADVANCING n LINES.
+       
+       WRITE record-name
+           AFTER ADVANCING PAGE.
+```
+
+### 3.2 WRITE 範例
+
+```cobol
+       *---- WRITE 實務範例 ---------------------------------------
+       
+       * 範例 1: 寫入 Sequential File
+       OPEN OUTPUT REPORT-FILE.
+       
+       MOVE 'HEADER' TO REPORT-RECORD.
+       WRITE REPORT-RECORD.
+       
+       MOVE 'DETAIL001' TO REPORT-RECORD.
+       WRITE REPORT-RECORD.
+       
+       CLOSE REPORT-FILE.
+       
+       * 範例 2: 寫入 VSAM KSDS
+       OPEN I-O ACCOUNT-FILE.
+       
+       MOVE '123456789012' TO ACCT-NUMBER.
+       MOVE 'JOHN DOE' TO ACCT-NAME.
+       MOVE 1000.00 TO ACCT-BALANCE.
+       
+       WRITE ACCOUNT-RECORD
+           INVALID KEY
+               DISPLAY 'Duplicate key error'
+               ADD 1 TO WS-ERROR-COUNT
+           NOT INVALID KEY
+               DISPLAY 'Record written successfully'
+               ADD 1 TO WS-WRITE-COUNT
+       END-WRITE.
+       
+       CLOSE ACCOUNT-FILE.
+       
+       * 範例 3: 報表寫入 (換頁控制)
+       OPEN OUTPUT PRINT-FILE.
+       
+       * 寫入標題並換頁
+       MOVE 'MONTHLY REPORT' TO PRINT-LINE.
+       WRITE PRINT-LINE AFTER ADVANCING PAGE.
+       
+       * 寫入明細並空一行
+       MOVE 'Line 1' TO PRINT-LINE.
+       WRITE PRINT-LINE AFTER ADVANCING 1 LINES.
+       
+       CLOSE PRINT-FILE.
 ```
 
 ---
 
-## REWRITE 敘述
+## 四、REWRITE 操作
 
-用於更新 VSAM 檔案中已存在的記錄。
-
-### 語法
+### 4.1 REWRITE 基本語法
 
 ```cobol
-       REWRITE 記錄名稱.
-```
-
-或：
-
-```cobol
-       REWRITE 記錄名稱 FROM 來源區域.
-```
-
-### 範例
-
-```cobol
-       *> 先讀取記錄
-       MOVE WS-TARGET-ACCT TO ACCT-NO.
-       READ ACCT-MASTER
+       *---- REWRITE 基本語法 -------------------------------------
+       
+       * 基本改寫 (需先讀取)
+       REWRITE record-name.
+       
+       * 從其他欄位改寫
+       REWRITE record-name FROM source-field.
+       
+       * 改寫並檢查錯誤
+       REWRITE record-name
            INVALID KEY
-               DISPLAY '找不到該帳號'
+               執行語句
+       END-REWRITE.
+```
+
+### 4.2 REWRITE 範例
+
+```cobol
+       *---- REWRITE 實務範例 -------------------------------------
+       
+       * 範例: 更新帳戶餘額
+       OPEN I-O ACCOUNT-FILE.
+       
+       * 先讀取記錄
+       MOVE '123456789012' TO ACCT-NUMBER.
+       
+       READ ACCOUNT-FILE
+           KEY IS ACCT-NUMBER
+           INVALID KEY
+               DISPLAY 'Account not found'
+               MOVE 'Y' TO WS-ERROR-FLAG
            NOT INVALID KEY
-               *> 修改欄位
-               ADD WS-DEPOSIT-AMT TO ACCT-BALANCE
-               MOVE FUNCTION CURRENT-DATE(1:8) TO LAST-UPD-DATE
+               * 修改餘額
+               ADD TXN-AMOUNT TO ACCT-BALANCE
                
-               *> 更新記錄
-               REWRITE ACCT-RECORD
+               * 改寫記錄
+               REWRITE ACCOUNT-RECORD
                    INVALID KEY
-                       DISPLAY '更新失敗'
+                       DISPLAY 'Rewrite error'
                    NOT INVALID KEY
-                       DISPLAY '更新成功'
+                       DISPLAY 'Account updated'
                END-REWRITE
        END-READ.
+       
+       CLOSE ACCOUNT-FILE.
 ```
-
-> ⚠️ **注意**：REWRITE 前必須先成功 READ 該記錄。
 
 ---
 
-## DELETE 敘述
+## 五、其他檔案操作
 
-用於刪除 VSAM 檔案中的記錄。
-
-### 語法
+### 5.1 DELETE 操作
 
 ```cobol
-       DELETE 檔案名稱.
-```
-
-### 範例
-
-```cobol
-       *> 方法一：先讀取再刪除
-       MOVE WS-TARGET-ACCT TO ACCT-NO.
-       READ ACCT-MASTER
+       *---- DELETE 操作 ------------------------------------------
+       
+       * 刪除記錄 (需先讀取)
+       DELETE file-name RECORD
            INVALID KEY
-               DISPLAY '找不到該帳號'
-           NOT INVALID KEY
-               DELETE ACCT-MASTER
-                   INVALID KEY
-                       DISPLAY '刪除失敗'
-                   NOT INVALID KEY
-                       DISPLAY '刪除成功'
-               END-DELETE
-       END-READ.
-
-       *> 方法二：直接刪除（RANDOM 模式）
-       MOVE WS-TARGET-ACCT TO ACCT-NO.
-       DELETE ACCT-MASTER
-           INVALID KEY
-               DISPLAY '找不到該帳號'
-           NOT INVALID KEY
-               DISPLAY '刪除成功'
+               執行語句
        END-DELETE.
+       
+       * 範例
+       OPEN I-O ACCOUNT-FILE.
+       
+       READ ACCOUNT-FILE
+           KEY IS ACCT-NUMBER
+       END-READ.
+       
+       IF WS-FILE-STATUS = '00'
+           DELETE ACCOUNT-FILE RECORD
+               INVALID KEY
+                   DISPLAY 'Delete failed'
+           END-DELETE
+       END-IF.
+       
+       CLOSE ACCOUNT-FILE.
 ```
 
----
-
-## START 敘述
-
-用於在 VSAM 檔案中定位到特定記錄，之後可以循序讀取。
-
-### 語法
+### 5.2 START 操作
 
 ```cobol
-       START 檔案名稱
-           KEY IS 比較運算子 鍵值變數
+       *---- START 操作 -------------------------------------------
+       
+       * 定位到特定 Key (用於循序讀取的起點)
+       START file-name
+           KEY IS EQUAL TO key-field
            INVALID KEY
-               處理找不到的邏輯
-           NOT INVALID KEY
-               處理找到的邏輯
+               執行語句
        END-START.
-```
-
-### 比較運算子
-
-| 運算子 | 說明 |
-|--------|------|
-| EQUAL TO | 等於 |
-| GREATER THAN | 大於 |
-| NOT LESS THAN | 大於等於 |
-| GREATER THAN OR EQUAL TO | 大於等於 |
-
-### 範例
-
-```cobol
-       *> 從特定帳號開始讀取
-       MOVE WS-START-ACCT TO ACCT-NO.
-       START ACCT-MASTER
-           KEY IS GREATER THAN OR EQUAL TO ACCT-NO
+       
+       * 其他比較運算子
+       START file-name
+           KEY IS GREATER THAN key-field.
+       
+       START file-name
+           KEY IS NOT LESS THAN key-field.
+       
+       * 範例: 從特定帳號開始讀取
+       OPEN INPUT ACCOUNT-FILE.
+       
+       MOVE '100000000000' TO ACCT-NUMBER.
+       
+       START ACCOUNT-FILE
+           KEY IS NOT LESS THAN ACCT-NUMBER
            INVALID KEY
-               DISPLAY '找不到符合條件的記錄'
+               DISPLAY 'No records found'
+               MOVE 'Y' TO WS-EOF
            NOT INVALID KEY
-               PERFORM UNTIL EOF-REACHED
-                   READ ACCT-MASTER NEXT RECORD
+               PERFORM UNTIL WS-EOF
+                   READ ACCOUNT-FILE NEXT RECORD
                        AT END
-                           SET EOF-REACHED TO TRUE
+                           MOVE 'Y' TO WS-EOF
                        NOT AT END
-                           PERFORM PROCESS-ACCT
+                           PERFORM PROCESS-RECORD
                    END-READ
                END-PERFORM
        END-START.
+       
+       CLOSE ACCOUNT-FILE.
+```
+
+### 5.3 UNLOCK 操作
+
+```cobol
+       *---- UNLOCK 操作 ------------------------------------------
+       
+       * 解除記錄鎖定
+       UNLOCK file-name RECORD.
+       
+       * 範例
+       READ ACCOUNT-FILE
+           KEY IS ACCT-NUMBER
+           LOCK
+       END-READ.
+       
+       * 處理記錄...
+       
+       * 解除鎖定
+       UNLOCK ACCOUNT-FILE RECORD.
 ```
 
 ---
 
-## 完整範例：批次更新帳戶餘額
+## 六、檔案操作最佳實踐
+
+### 6.1 標準檔案處理模板
 
 ```cobol
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. BALUPD.
-
-       ENVIRONMENT DIVISION.
-       INPUT-OUTPUT SECTION.
-       FILE-CONTROL.
-           SELECT TRANS-FILE ASSIGN TO TRANDATA
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-TRANS-STATUS.
-           SELECT ACCT-MASTER ASSIGN TO ACCTVSAM
-               ORGANIZATION IS INDEXED
-               ACCESS MODE IS RANDOM
-               RECORD KEY IS ACCT-NO
-               FILE STATUS IS WS-ACCT-STATUS.
-           SELECT RPT-FILE ASSIGN TO UPDRPT
-               ORGANIZATION IS SEQUENTIAL
-               FILE STATUS IS WS-RPT-STATUS.
-
-       DATA DIVISION.
-       FILE SECTION.
-       FD TRANS-FILE.
-       01 TRANS-RECORD.
-          05 TRANS-ACCT        PIC X(16).
-          05 TRANS-TYPE        PIC XX.
-          05 TRANS-AMT         PIC S9(9)V99.
-
-       FD ACCT-MASTER.
-       01 ACCT-RECORD.
-          05 ACCT-NO           PIC X(16).
-          05 ACCT-NAME         PIC X(40).
-          05 ACCT-BALANCE      PIC S9(11)V99 COMP-3.
-          05 ACCT-STATUS       PIC X.
-
-       FD RPT-FILE.
-       01 RPT-RECORD           PIC X(80).
-
-       WORKING-STORAGE SECTION.
-       01 WS-STATUS.
-          05 WS-TRANS-STATUS   PIC XX.
-          05 WS-ACCT-STATUS    PIC XX.
-          05 WS-RPT-STATUS     PIC XX.
-
-       01 WS-FLAGS.
-          05 WS-EOF-FLAG       PIC X VALUE 'N'.
-             88 EOF-REACHED    VALUE 'Y'.
-
-       01 WS-COUNTERS.
-          05 WS-READ-CNT       PIC 9(8) VALUE 0.
-          05 WS-UPD-CNT        PIC 9(8) VALUE 0.
-          05 WS-ERR-CNT        PIC 9(5) VALUE 0.
-
-       01 WS-REPORT-LINE.
-          05 WS-RPT-ACCT       PIC X(16).
-          05 FILLER            PIC XX VALUE '  '.
-          05 WS-RPT-TYPE       PIC XX.
-          05 FILLER            PIC XX VALUE '  '.
-          05 WS-RPT-AMT        PIC -(9)9.99.
-          05 FILLER            PIC XX VALUE '  '.
-          05 WS-RPT-STATUS     PIC X(10).
-
-       PROCEDURE DIVISION.
+       *---- 標準檔案處理模板 -------------------------------------
+       
        0000-MAIN.
            PERFORM 1000-INIT
-           PERFORM 2000-PROCESS UNTIL EOF-REACHED
-           PERFORM 9000-TERM
+           PERFORM 2000-PROCESS
+           PERFORM 3000-TERM
            STOP RUN.
-
+       
        1000-INIT.
-           OPEN INPUT TRANS-FILE
-           OPEN I-O ACCT-MASTER
-           OPEN OUTPUT RPT-FILE
-           PERFORM 1100-READ-FIRST.
-
-       1100-READ-FIRST.
-           READ TRANS-FILE
+           OPEN INPUT INPUT-FILE
+           IF WS-IN-STATUS NOT = '00'
+               DISPLAY 'Input file open error: ' WS-IN-STATUS
+               MOVE 9999 TO RETURN-CODE
+               STOP RUN
+           END-IF
+           
+           OPEN OUTPUT OUTPUT-FILE
+           IF WS-OUT-STATUS NOT = '00'
+               DISPLAY 'Output file open error: ' WS-OUT-STATUS
+               MOVE 9999 TO RETURN-CODE
+               STOP RUN
+           END-IF
+           
+           * 讀第一筆
+           READ INPUT-FILE
                AT END
-                   SET EOF-REACHED TO TRUE
-               NOT AT END
-                   ADD 1 TO WS-READ-CNT
+                   MOVE 'Y' TO WS-EOF
            END-READ.
-
+       
        2000-PROCESS.
-           PERFORM 2100-UPDATE-BALANCE
-           PERFORM 1100-READ-FIRST.
-
-       2100-UPDATE-BALANCE.
-           MOVE TRANS-ACCT TO ACCT-NO.
-           READ ACCT-MASTER
+           PERFORM UNTIL WS-EOF
+               PERFORM 2100-PROCESS-RECORD
+               READ INPUT-FILE
+                   AT END
+                       MOVE 'Y' TO WS-EOF
+               END-READ
+           END-PERFORM.
+       
+       2100-PROCESS-RECORD.
+           * 處理邏輯
+           WRITE OUTPUT-RECORD FROM INPUT-RECORD
                INVALID KEY
-                   MOVE 'NOT FOUND' TO WS-RPT-STATUS
-                   ADD 1 TO WS-ERR-CNT
-               NOT INVALID KEY
-                   PERFORM 2110-CALC-NEW-BAL
-                   PERFORM 2120-WRITE-BACK
-           END-READ
-
-           PERFORM 2130-WRITE-REPORT.
-
-       2110-CALC-NEW-BAL.
-           EVALUATE TRANS-TYPE
-               WHEN 'DP'
-                   ADD TRANS-AMT TO ACCT-BALANCE
-                   MOVE 'SUCCESS' TO WS-RPT-STATUS
-               WHEN 'WD'
-                   IF ACCT-BALANCE >= TRANS-AMT
-                       SUBTRACT TRANS-AMT FROM ACCT-BALANCE
-                       MOVE 'SUCCESS' TO WS-RPT-STATUS
-                   ELSE
-                       MOVE 'INSUFF BAL' TO WS-RPT-STATUS
-                       ADD 1 TO WS-ERR-CNT
-                   END-IF
-               WHEN OTHER
-                   MOVE 'INVALID TXN' TO WS-RPT-STATUS
-                   ADD 1 TO WS-ERR-CNT
-           END-EVALUATE.
-
-       2120-WRITE-BACK.
-           IF WS-RPT-STATUS = 'SUCCESS'
-               REWRITE ACCT-RECORD
-                   INVALID KEY
-                       MOVE 'UPDATE ERR' TO WS-RPT-STATUS
-                       ADD 1 TO WS-ERR-CNT
-                   NOT INVALID KEY
-                       ADD 1 TO WS-UPD-CNT
-               END-REWRITE
-           END-IF.
-
-       2130-WRITE-REPORT.
-           MOVE TRANS-ACCT TO WS-RPT-ACCT.
-           MOVE TRANS-TYPE TO WS-RPT-TYPE.
-           MOVE TRANS-AMT TO WS-RPT-AMT.
-           WRITE RPT-RECORD FROM WS-REPORT-LINE.
-
-       9000-TERM.
-           CLOSE TRANS-FILE
-           CLOSE ACCT-MASTER
-           CLOSE RPT-FILE
-           DISPLAY '========================='
-           DISPLAY '交易筆數: ' WS-READ-CNT
-           DISPLAY '成功筆數: ' WS-UPD-CNT
-           DISPLAY '失敗筆數: ' WS-ERR-CNT
-           DISPLAY '========================='.
+                   ADD 1 TO WS-WRITE-ERROR
+           END-WRITE
+           ADD 1 TO WS-WRITE-COUNT.
+       
+       3000-TERM.
+           CLOSE INPUT-FILE
+           CLOSE OUTPUT-FILE
+           DISPLAY 'Records processed: ' WS-READ-COUNT
+           DISPLAY 'Records written: ' WS-WRITE-COUNT.
 ```
 
 ---
 
-## BA 實務應用
+## 七、總結
 
-### 如何閱讀檔案處理邏輯？
+### 本課程重點回顧
 
-1. **找出 OPEN 敘述**：了解開啟哪些檔案、什麼模式
-2. **追蹤 READ/WRITE**：了解資料流向
-3. **注意錯誤處理**：INVALID KEY / AT END 的處理方式
-4. **確認 CLOSE**：確保所有檔案都被正確關閉
+✅ **OPEN**: INPUT, OUTPUT, EXTEND, I-O
 
-### 需求分析時的關鍵問題
+✅ **CLOSE**: 基本關閉、WITH LOCK、REWIND
 
-| 看到的操作 | 應該問的問題 |
-|------------|-------------|
-| OPEN I-O | 「這個檔案會被修改嗎？」 |
-| REWRITE | 「更新邏輯是什麼？有哪些欄位會變？」 |
-| INVALID KEY | 「找不到記錄時應該怎麼處理？」 |
-| DELETE | 「刪除前需要做什麼檢查？」 |
+✅ **READ**: Sequential, Random, NEXT, PREVIOUS
+
+✅ **WRITE**: 基本寫入、FROM、INVALID KEY
+
+✅ **REWRITE**: 更新記錄，需先讀取
+
+✅ **其他**: DELETE, START, UNLOCK
 
 ---
 
-## 練習題
-
-### 題目 1
-以下程式片段會產生什麼問題？
-
-```cobol
-       OPEN OUTPUT ACCT-FILE.
-       READ ACCT-FILE ...
-```
-
-### 題目 2
-設計一個程式片段，實現以下功能：
-- 讀取交易檔案（Sequential）
-- 更新帳戶主檔（VSAM KSDS）
-- 記錄更新失敗的交易到錯誤檔案
-
-### 題目 3
-說明 START 敘述的用途和適用情境。
-
----
-
-## 重點回顧
-
-| 操作 | 說明 | 檔案類型 |
-|------|------|----------|
-| OPEN INPUT | 唯讀開啟 | 所有 |
-| OPEN OUTPUT | 建立新檔 | 所有 |
-| OPEN I-O | 讀寫模式 | VSAM |
-| READ | 讀取記錄 | 所有 |
-| WRITE | 寫入記錄 | 所有 |
-| REWRITE | 更新記錄 | VSAM |
-| DELETE | 刪除記錄 | VSAM |
-| START | 定位記錄 | VSAM |
-
----
-
-## 延伸閱讀
-
-- [Lesson 3-3：JCL 基本結構](lesson-3-3-jcl-basic.md)
-- [Lesson 3-4：Sort 與 Utility](lesson-3-4-sort-utility.md)
+*課程版本: 1.0 | 更新日期: 2026-04-12*

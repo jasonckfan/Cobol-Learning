@@ -1,519 +1,531 @@
-# Lesson 2-5：流程控制：IF、EVALUATE、PERFORM
+# Lesson 2-5: 流程控制 - IF、EVALUATE、PERFORM
+
+> 理解 COBOL 的條件判斷與迴圈控制
+
+---
 
 ## 學習目標
 
-- 掌握 COBOL 的條件判斷語法
-- 理解 EVALUATE 多重選擇結構
-- 能夠閱讀 PERFORM 迴圈與段落呼叫
+- 掌握 IF 條件判斷的各種形式
+- 理解 EVALUATE 多條件判斷的使用
+- 學會 PERFORM 迴圈與副程式的應用
+- 了解 BA 在閱讀程式邏輯時的關注點
 
 ---
 
-## 為什麼流程控制很重要？
+## 一、IF 條件判斷
 
-銀行程式的核心是**業務邏輯**：
-- 如果餘額不足，拒絕交易
-- 根據帳戶類型，套用不同利率
-- 重複處理每一筆交易記錄
-
-這些都需要流程控制來實現。
-
----
-
-## IF 敘述
-
-### 基本語法
+### 1.1 IF 基本語法
 
 ```cobol
+       *---- IF 基本語法 ------------------------------------------
+       
+       * 簡單 IF
        IF 條件
-           敘述
+           執行語句
        END-IF.
-```
-
-或帶 ELSE：
-
-```cobol
+       
+       * IF-ELSE
        IF 條件
-           敘述1
+           執行語句-A
        ELSE
-           敘述2
+           執行語句-B
+       END-IF.
+       
+       * IF-ELSE-IF (巢狀)
+       IF 條件-1
+           執行語句-1
+       ELSE IF 條件-2
+           執行語句-2
+       ELSE IF 條件-3
+           執行語句-3
+       ELSE
+           執行語句-其他
        END-IF.
 ```
 
-### 範例
+### 1.2 條件運算子
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              COBOL 條件運算子                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  運算子        意義              範例                           │
+│  ───────       ────              ────                           │
+│                                                                 │
+│  = 或 EQUAL    等於              IF WS-A = WS-B                │
+│  > 或 GREATER  大於              IF WS-A > 100                 │
+│  < 或 LESS     小於              IF WS-A < WS-B                │
+│  >=            大於等於          IF WS-A >= 0                  │
+│  <=            小於等於          IF WS-A <= 100                │
+│  <> 或 NOT =   不等於            IF WS-A <> WS-B               │
+│                                                                 │
+│  AND           且                IF A > 0 AND B > 0            │
+│  OR            或                IF A = 1 OR B = 2             │
+│  NOT           非                IF NOT WS-FLAG = 'Y'          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.3 IF 實務範例
 
 ```cobol
+       *---- IF 實務範例 ------------------------------------------
+       
+       * 範例 1: 帳戶餘額檢查
        IF ACCT-BALANCE < 0
-           DISPLAY '帳戶透支'
-           MOVE 'O' TO ACCT-STATUS
+           MOVE 'OVERDRAWN' TO WS-STATUS
+           ADD 1 TO WS-OD-COUNT
+       ELSE IF ACCT-BALANCE < 1000
+           MOVE 'LOW-BALANCE' TO WS-STATUS
        ELSE
-           DISPLAY '帳戶正常'
+           MOVE 'NORMAL' TO WS-STATUS
        END-IF.
-```
-
-### 巢狀 IF
-
-```cobol
-       IF ACCT-TYPE = 'SA'
-           IF ACCT-BALANCE > 100000
-               MOVE 'P' TO ACCT-TIER
+       
+       * 範例 2: 複合條件
+       IF ACCT-TYPE = 'SAVINGS' AND 
+          ACCT-BALANCE >= 10000 AND
+          ACCT-STATUS = 'ACTIVE'
+           COMPUTE WS-BONUS-INT = ACCT-BALANCE * 0.001
+           ADD WS-BONUS-INT TO ACCT-INTEREST
+       END-IF.
+       
+       * 範例 3: 使用 Level 88 條件
+       IF ACCT-CLOSED
+           DISPLAY 'Account is closed'
+       ELSE IF ACCT-FROZEN
+           DISPLAY 'Account is frozen'
+       ELSE IF ACCT-ACTIVE
+           PERFORM PROCESS-TRANSACTION
+       END-IF.
+       
+       * 範例 4: 巢狀 IF
+       IF TXN-TYPE = 'WITHDRAW'
+           IF ACCT-BALANCE >= TXN-AMOUNT
+               SUBTRACT TXN-AMOUNT FROM ACCT-BALANCE
+               WRITE TXN-RECORD
            ELSE
-               MOVE 'R' TO ACCT-TIER
-           END-IF
-       ELSE
-           IF ACCT-TYPE = 'CA'
-               MOVE 'S' TO ACCT-TIER
+               MOVE 'INSUFFICIENT-FUNDS' TO WS-ERROR
+               PERFORM ERROR-HANDLING
            END-IF
        END-IF.
 ```
 
 ---
 
-## 條件運算子
+## 二、EVALUATE 多條件判斷
 
-### 比較運算子
+### 2.1 EVALUATE 基本語法
 
-| COBOL | 意義 | 範例 |
-|-------|------|------|
-| `=` | 等於 | `ACCT-TYPE = 'SA'` |
-| `NOT =` | 不等於 | `STATUS NOT = 'C'` |
-| `>` | 大於 | `BALANCE > 0` |
-| `<` | 小於 | `BALANCE < 100` |
-| `>=` | 大於等於 | `BALANCE >= 1000` |
-| `<=` | 小於等於 | `BALANCE <= 50000` |
-
-### 邏輯運算子
-
-| COBOL | 意義 | 範例 |
-|-------|------|------|
-| `AND` | 且 | `BALANCE > 0 AND STATUS = 'A'` |
-| `OR` | 或 | `TYPE = 'SA' OR TYPE = 'CA'` |
-| `NOT` | 非 | `NOT EOF-REACHED` |
-
-### 範例
+EVALUATE 類似於其他語言的 switch-case，適合多條件分支。
 
 ```cobol
-       IF ACCT-STATUS = 'A' AND ACCT-BALANCE > 10000
-           PERFORM CALCULATE-PREMIUM-INTEREST
-       END-IF.
-
-       IF TRANS-TYPE = 'WD' OR TRANS-TYPE = 'TF'
-           PERFORM CHECK-SUFFICIENT-FUNDS
-       END-IF.
-```
-
----
-
-## 數值比較
-
-### GREATER THAN / LESS THAN
-
-```cobol
-       IF ACCT-BALANCE GREATER THAN 100000
-           DISPLAY '高資產客戶'
-       END-IF.
-```
-
-也可寫成：
-
-```cobol
-       IF ACCT-BALANCE > 100000
-           DISPLAY '高資產客戶'
-       END-IF.
-```
-
-### 範圍檢查
-
-```cobol
-       IF ACCT-BALANCE GREATER THAN 10000
-          AND LESS THAN 100000
-           DISPLAY '中等資產客戶'
-       END-IF.
-```
-
----
-
-## 字串比較
-
-### 基本比較
-
-```cobol
-       IF ACCT-TYPE = 'SA'
-           PERFORM PROCESS-SAVINGS
-       END-IF.
-```
-
-### 包含檢查
-
-```cobol
-       IF ACCT-NAME(1:4) = 'VIP '
-           MOVE 'V' TO CUST-TYPE
-       END-IF.
-```
-
----
-
-## EVALUATE 敘述
-
-類似其他語言的 switch/case，用於多重選擇。
-
-### 基本語法
-
-```cobol
-       EVALUATE 變數
-           WHEN 值1
-               敘述1
-           WHEN 值2
-               敘述2
+       *---- EVALUATE 基本語法 ------------------------------------
+       
+       EVALUATE 判斷對象
+           WHEN 值-1
+               執行語句-1
+           WHEN 值-2
+               執行語句-2
+           WHEN 值-3
+               執行語句-3
            WHEN OTHER
-               預設敘述
+               執行語句-其他
        END-EVALUATE.
-```
-
-### 範例
-
-```cobol
-       EVALUATE ACCT-TYPE
-           WHEN 'SA'
-               MOVE 0.02 TO WS-INT-RATE
-           WHEN 'CA'
-               MOVE 0.005 TO WS-INT-RATE
-           WHEN 'FD'
-               MOVE 0.03 TO WS-INT-RATE
-           WHEN OTHER
-               MOVE 0 TO WS-INT-RATE
-       END-EVALUATE.
-```
-
-### 多值匹配
-
-```cobol
-       EVALUATE ACCT-STATUS
+       
+       * 多值判斷
+       EVALUATE WS-GRADE
            WHEN 'A'
-               PERFORM PROCESS-ACTIVE
-           WHEN 'D' OR 'S'
-               PERFORM PROCESS-DORMANT
+               MOVE 'EXCELLENT' TO WS-RESULT
+           WHEN 'B'
+               MOVE 'GOOD' TO WS-RESULT
            WHEN 'C'
-               PERFORM PROCESS-CLOSED
+               MOVE 'AVERAGE' TO WS-RESULT
+           WHEN 'D' 'E'  *> 多個值
+               MOVE 'POOR' TO WS-RESULT
+           WHEN OTHER
+               MOVE 'INVALID' TO WS-RESULT
        END-EVALUATE.
 ```
 
-### 範圍匹配
+### 2.2 EVALUATE TRUE (條件判斷)
 
 ```cobol
+       *---- EVALUATE TRUE 範例 -----------------------------------
+       
+       * 類似 IF-ELSE-IF，但更清晰
        EVALUATE TRUE
-           WHEN ACCT-BALANCE > 1000000
-               MOVE 'PLATINUM' TO CUST-TIER
-           WHEN ACCT-BALANCE > 100000
-               MOVE 'GOLD' TO CUST-TIER
-           WHEN ACCT-BALANCE > 10000
-               MOVE 'SILVER' TO CUST-TIER
+           WHEN ACCT-BALANCE < 0
+               MOVE 'OVERDRAWN' TO WS-STATUS
+           WHEN ACCT-BALANCE < 1000
+               MOVE 'LOW-BALANCE' TO WS-STATUS
+           WHEN ACCT-BALANCE < 10000
+               MOVE 'MEDIUM-BALANCE' TO WS-STATUS
            WHEN OTHER
-               MOVE 'REGULAR' TO CUST-TIER
+               MOVE 'HIGH-BALANCE' TO WS-STATUS
+       END-EVALUATE.
+       
+       * 複合條件
+       EVALUATE TRUE
+           WHEN ACCT-TYPE = 'SAVINGS' AND ACCT-BALANCE >= 10000
+               MOVE 'VIP-SAVINGS' TO WS-CATEGORY
+           WHEN ACCT-TYPE = 'SAVINGS' AND ACCT-BALANCE < 10000
+               MOVE 'STD-SAVINGS' TO WS-CATEGORY
+           WHEN ACCT-TYPE = 'CHECKING' AND ACCT-BALANCE >= 5000
+               MOVE 'VIP-CHECKING' TO WS-CATEGORY
+           WHEN ACCT-TYPE = 'CHECKING' AND ACCT-BALANCE < 5000
+               MOVE 'STD-CHECKING' TO WS-CATEGORY
+           WHEN OTHER
+               MOVE 'OTHER' TO WS-CATEGORY
        END-EVALUATE.
 ```
 
-> 💡 **技巧**：`EVALUATE TRUE` 讓你可以用條件式而非固定值來匹配。
+### 2.3 IF vs EVALUATE 選擇指南
 
-### 多重條件
-
-```cobol
-       EVALUATE TRUE
-           WHEN ACCT-TYPE = 'SA' AND ACCT-BALANCE > 100000
-               MOVE 0.025 TO WS-INT-RATE
-           WHEN ACCT-TYPE = 'SA' AND ACCT-BALANCE <= 100000
-               MOVE 0.02 TO WS-INT-RATE
-           WHEN ACCT-TYPE = 'CA'
-               MOVE 0.005 TO WS-INT-RATE
-           WHEN OTHER
-               MOVE 0 TO WS-INT-RATE
-       END-EVALUATE.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              IF vs EVALUATE 選擇指南                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  使用 IF 當：                                                   │
+│  • 條件是範圍比較 (> < >= <=)                                  │
+│  • 條件是複合邏輯 (AND/OR)                                     │
+│  • 只有 2-3 個分支                                             │
+│  • 巢狀條件較深                                                │
+│                                                                 │
+│  使用 EVALUATE 當：                                             │
+│  • 多個離散值判斷                                              │
+│  • 類似 switch-case 場景                                       │
+│  • 條件是單一變數的多個值                                      │
+│  • 有 4 個以上分支                                             │
+│  • 使用 EVALUATE TRUE 進行多條件分支                           │
+│                                                                 │
+│  💡 銀行實務：                                                  │
+│  • 交易類型處理 → EVALUATE                                     │
+│  • 帳戶狀態處理 → EVALUATE                                     │
+│  • 餘額檢查 → IF                                               │
+│  • 權限檢查 → IF                                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## PERFORM 敘述
+## 三、PERFORM 迴圈控制
 
-PERFORM 是 COBOL 的核心控制結構，用於呼叫段落（paragraph）。
-
-### 基本呼叫
+### 3.1 PERFORM 基本形式
 
 ```cobol
-       PERFORM 1000-INIT.
-       PERFORM 2000-PROCESS.
-       PERFORM 3000-CLEANUP.
-```
-
-### 執行多次
-
-```cobol
-       PERFORM 2000-PROCESS 10 TIMES.
-```
-
-### 條件執行
-
-```cobol
-       PERFORM 2000-PROCESS UNTIL EOF-REACHED.
-```
-
-### 迴圈結構
-
-```cobol
-       PERFORM VARYING WS-IDX FROM 1 BY 1 UNTIL WS-IDX > 100
-           DISPLAY 'PROCESSING: ' WS-IDX
-           PERFORM PROCESS-ONE-ITEM
+       *---- PERFORM 基本語法 -------------------------------------
+       
+       * 1. 執行一次段落
+       PERFORM 段落名稱.
+       
+       * 2. 執行多次
+       PERFORM 段落名稱 n TIMES.
+       
+       * 3. 直到條件成立 (類似 do-while)
+       PERFORM 段落名稱 UNTIL 條件.
+       
+       * 4. 類似 for 迴圈
+       PERFORM 段落名稱 
+           VARYING 變數 FROM 起始 BY 增量 UNTIL 條件.
+       
+       * 5. 執行多個連續段落
+       PERFORM 段落-1 THRU 段落-n.
+       
+       * 6. 巢狀 PERFORM (新版 COBOL)
+       PERFORM UNTIL 外層條件
+           PERFORM UNTIL 內層條件
+               執行語句
+           END-PERFORM
        END-PERFORM.
 ```
 
----
-
-## 銀行實務範例
-
-### 日終批次處理主流程
+### 3.2 PERFORM 範例
 
 ```cobol
+       *---- PERFORM 範例 -----------------------------------------
+       
+       * 範例 1: 執行 10 次初始化
+       PERFORM INIT-ARRAY 10 TIMES.
+       
+       * 範例 2: 讀檔直到結束
+       PERFORM PROCESS-RECORD 
+           UNTIL WS-EOF-FLAG = 'Y'.
+       
+       * 範例 3: 陣列處理 (for 迴圈)
+       PERFORM PROCESS-ELEMENT 
+           VARYING WS-INDEX FROM 1 BY 1 
+           UNTIL WS-INDEX > 100.
+       
+       * 範例 4: 巢狀迴圈 (處理二維陣列)
+       PERFORM VARYING WS-ROW FROM 1 BY 1 
+               UNTIL WS-ROW > 10
+           PERFORM VARYING WS-COL FROM 1 BY 1 
+                   UNTIL WS-COL > 5
+               COMPUTE WS-TOTAL = WS-TOTAL + WS-ARRAY(WS-ROW, WS-COL)
+           END-PERFORM
+       END-PERFORM.
+       
+       * 範例 5: 連續段落執行
+       PERFORM 1000-INIT 
+           THRU 1000-INIT-EXIT.
+```
+
+### 3.3 檔案處理迴圈
+
+```cobol
+       *---- 檔案處理標準模式 -------------------------------------
+       
+       * 循序檔讀取標準模式
+       2000-PROCESS-FILE.
+           OPEN INPUT TRANSACTION-FILE
+           
+           * 先讀第一筆
+           READ TRANSACTION-FILE
+               AT END
+                   MOVE 'Y' TO WS-EOF-FLAG
+           END-READ
+           
+           * 迴圈處理直到結束
+           PERFORM UNTIL WS-EOF-FLAG = 'Y'
+               PERFORM 2100-PROCESS-RECORD
+               READ TRANSACTION-FILE
+                   AT END
+                       MOVE 'Y' TO WS-EOF-FLAG
+               END-READ
+           END-PERFORM
+           
+           CLOSE TRANSACTION-FILE
+           .
+       
+       2100-PROCESS-RECORD.
+           * 處理單筆記錄的邏輯
+           IF TXN-TYPE = 'DEPOSIT'
+               PERFORM 2110-PROCESS-DEPOSIT
+           ELSE IF TXN-TYPE = 'WITHDRAW'
+               PERFORM 2120-PROCESS-WITHDRAW
+           ELSE
+               PERFORM 2130-PROCESS-OTHER
+           END-IF
+           .
+```
+
+---
+
+## 四、流程控制最佳實踐
+
+### 4.1 銀行程式結構模式
+
+```cobol
+       *---- 標準批次程式結構 -------------------------------------
+       
        PROCEDURE DIVISION.
+       
        0000-MAIN.
-           PERFORM 1000-INIT
-           PERFORM 2000-PROCESS UNTIL EOF-REACHED
-           PERFORM 3000-SUMMARY
-           PERFORM 9000-TERM
-           STOP RUN.
-
-       1000-INIT.
-           OPEN INPUT ACCT-FILE
-           OPEN OUTPUT RPT-FILE
-           MOVE 0 TO WS-TOTAL-BALANCE
-           MOVE 0 TO WS-ACCT-COUNT
-           PERFORM 1100-READ-FIRST.
-
-       1100-READ-FIRST.
-           READ ACCT-FILE
-               AT END
-                   SET EOF-REACHED TO TRUE
-               NOT AT END
-                   ADD 1 TO WS-ACCT-COUNT
-           END-READ.
-
+           PERFORM 1000-INITIALIZE
+           PERFORM 2000-PROCESS
+           PERFORM 3000-TERMINATE
+           STOP RUN
+           .
+       
+       1000-INITIALIZE.
+           * 開檔、初始化變數、讀第一筆
+           .
+       
        2000-PROCESS.
-           PERFORM 2100-CALC-INTEREST
-           PERFORM 2200-UPDATE-BALANCE
-           PERFORM 2300-WRITE-REPORT
-           PERFORM 2400-READ-NEXT.
-
-       2100-CALC-INTEREST.
-           EVALUATE ACCT-TYPE
-               WHEN 'SA'
-                   COMPUTE WS-INTEREST = ACCT-BALANCE * 0.02
-               WHEN 'CA'
-                   COMPUTE WS-INTEREST = ACCT-BALANCE * 0.005
-               WHEN 'FD'
-                   COMPUTE WS-INTEREST = ACCT-BALANCE * 0.03
+           * 主處理迴圈
+           PERFORM UNTIL WS-EOF
+               PERFORM 2100-READ-AND-PROCESS
+           END-PERFORM
+           .
+       
+       2100-READ-AND-PROCESS.
+           * 處理單筆記錄
+           EVALUATE TXN-TYPE
+               WHEN 'DP'
+                   PERFORM 2110-DEPOSIT
+               WHEN 'WD'
+                   PERFORM 2120-WITHDRAW
+               WHEN 'TR'
+                   PERFORM 2130-TRANSFER
                WHEN OTHER
-                   MOVE 0 TO WS-INTEREST
-           END-EVALUATE.
-
-       2200-UPDATE-BALANCE.
-           ADD WS-INTEREST TO ACCT-BALANCE
-           ADD ACCT-BALANCE TO WS-TOTAL-BALANCE.
-
-       2300-WRITE-REPORT.
-           MOVE ACCT-NO TO RPT-ACCT-NO
-           MOVE ACCT-BALANCE TO RPT-BALANCE
-           MOVE WS-INTEREST TO RPT-INTEREST
-           WRITE RPT-RECORD.
-
-       2400-READ-NEXT.
-           READ ACCT-FILE
+                   PERFORM 2140-ERROR
+           END-EVALUATE
+           
+           READ INPUT-FILE
                AT END
-                   SET EOF-REACHED TO TRUE
-               NOT AT END
-                   ADD 1 TO WS-ACCT-COUNT
-           END-READ.
-
-       3000-SUMMARY.
-           DISPLAY '=============================='
-           DISPLAY 'TOTAL ACCOUNTS: ' WS-ACCT-COUNT
-           DISPLAY 'TOTAL BALANCE:  ' WS-TOTAL-BALANCE
-           DISPLAY '=============================='.
-
-       9000-TERM.
-           CLOSE ACCT-FILE
-           CLOSE RPT-FILE.
+                   MOVE 'Y' TO WS-EOF
+           END-READ
+           .
+       
+       3000-TERMINATE.
+           * 關檔、寫統計、結束
+           .
 ```
 
----
-
-## PERFORM 常見模式
-
-### 模式 1：主控迴圈
+### 4.2 錯誤處理模式
 
 ```cobol
-       PERFORM 1000-INIT
-       PERFORM 2000-PROCESS UNTIL EOF-REACHED
-       PERFORM 9000-TERM
-       STOP RUN.
-```
-
-### 模式 2：陣列處理
-
-```cobol
-       PERFORM VARYING WS-IDX FROM 1 BY 1
-           UNTIL WS-IDX > WS-MAX-ITEMS
-           IF ITEM-STATUS(WS-IDX) = 'A'
-               PERFORM PROCESS-ITEM
+       *---- 錯誤處理標準模式 -------------------------------------
+       
+       2000-PROCESS-TRANSACTION.
+           INITIALIZE WS-ERROR-FLAG
+           
+           * 驗證 1: 帳戶存在
+           IF NOT ACCOUNT-EXISTS
+               MOVE 'ACCT-NOT-FOUND' TO WS-ERROR-MSG
+               MOVE 'Y' TO WS-ERROR-FLAG
            END-IF
-       END-PERFORM.
-```
-
-### 模式 3：條件迴圈
-
-```cobol
-       MOVE 0 TO WS-RETRY-COUNT.
-       PERFORM UNTIL WS-FILE-STATUS = '00'
-                          OR WS-RETRY-COUNT > 3
-           ADD 1 TO WS-RETRY-COUNT
-           PERFORM ATTEMPT-FILE-OPEN
-       END-PERFORM.
-```
-
----
-
-## CONTINUE 與 NEXT SENTENCE
-
-### CONTINUE
-
-什麼都不做，繼續下一個敘述。
-
-```cobol
-       IF ACCT-STATUS = 'C'
-           CONTINUE
-       ELSE
-           PERFORM PROCESS-ACCOUNT
-       END-IF.
-```
-
-### NEXT SENTENCE
-
-跳到下一個句子（句點後）。
-
-```cobol
-       IF ACCT-STATUS = 'C'
-           NEXT SENTENCE
-       ELSE
-           PERFORM PROCESS-ACCOUNT.
-       *> 這裡是下一個句子
-```
-
-> 💡 **建議**：現代 COBOL 偏好使用 CONTINUE 和 END-IF，避免 NEXT SENTENCE。
-
----
-
-## BA 實務應用
-
-### 如何閱讀業務邏輯？
-
-1. **找到主流程**：通常是 0000-MAIN
-2. **追蹤 PERFORM**：看有哪些段落被呼叫
-3. **找條件判斷**：IF 和 EVALUATE 是業務規則所在
-4. **理解迴圈**：PERFORM UNTIL 通常是處理多筆資料
-
-### 需求分析時的關鍵點
-
-| 看到的結構 | 業務含義 |
-|------------|----------|
-| `IF ... ELSE ...` | 業務分流邏輯 |
-| `EVALUATE` | 多種情況的分類處理 |
-| `PERFORM UNTIL` | 批次處理所有資料 |
-| `PERFORM n TIMES` | 固定次數的重複處理 |
-
-### 影響分析範例
-
-**情境：新增 VIP 客戶等級**
-
-```cobol
-       *> 原本的客戶分級
-       EVALUATE TRUE
-           WHEN ACCT-BALANCE > 100000
-               MOVE 'GOLD' TO CUST-TIER
-           WHEN ACCT-BALANCE > 10000
-               MOVE 'SILVER' TO CUST-TIER
-           WHEN OTHER
-               MOVE 'REGULAR' TO CUST-TIER
-       END-EVALUATE.
-
-       *> 新增 VIP 等級後
-       EVALUATE TRUE
-           WHEN ACCT-BALANCE > 1000000
-               MOVE 'PLATINUM' TO CUST-TIER  *> 新增
-           WHEN ACCT-BALANCE > 100000
-               MOVE 'GOLD' TO CUST-TIER
-           WHEN ACCT-BALANCE > 10000
-               MOVE 'SILVER' TO CUST-TIER
-           WHEN OTHER
-               MOVE 'REGULAR' TO CUST-TIER
-       END-EVALUATE.
-```
-
-**影響**：
-1. 找到所有客戶分級的 EVALUATE
-2. 檢查報表是否有客戶等級欄位
-3. 確認相關統計邏輯是否需要調整
-
----
-
-## 練習題
-
-### 題目 1
-將以下巢狀 IF 改寫為 EVALUATE：
-
-```cobol
-       IF ACCT-TYPE = 'SA'
-           IF ACCT-BALANCE > 100000
-               MOVE 0.025 TO WS-RATE
-           ELSE
-               MOVE 0.02 TO WS-RATE
+           
+           * 驗證 2: 帳戶狀態
+           IF WS-ERROR-FLAG = 'N' AND ACCT-CLOSED
+               MOVE 'ACCT-CLOSED' TO WS-ERROR-MSG
+               MOVE 'Y' TO WS-ERROR-FLAG
            END-IF
-       ELSE
-           IF ACCT-TYPE = 'CA'
-               MOVE 0.005 TO WS-RATE
-           ELSE
-               MOVE 0 TO WS-RATE
+           
+           * 驗證 3: 餘額足夠
+           IF WS-ERROR-FLAG = 'N' AND 
+              TXN-TYPE = 'WITHDRAW' AND
+              ACCT-BALANCE < TXN-AMOUNT
+               MOVE 'INSUFFICIENT-FUNDS' TO WS-ERROR-MSG
+               MOVE 'Y' TO WS-ERROR-FLAG
            END-IF
-       END-IF.
+           
+           * 處理結果
+           EVALUATE WS-ERROR-FLAG
+               WHEN 'Y'
+                   PERFORM 2900-WRITE-ERROR
+               WHEN 'N'
+                   PERFORM 2100-PROCESS-VALID-TXN
+           END-EVALUATE
+           .
 ```
-
-### 題目 2
-說明以下程式的執行流程：
-
-```cobol
-       PERFORM 1000-INIT
-       PERFORM 2000-PROCESS UNTIL WS-COUNT > 10
-       PERFORM 9000-TERM.
-```
-
-### 題目 3
-設計一個 EVALUATE 結構，根據交易類型執行不同處理：
-- 'DP'：存款處理
-- 'WD'：提款處理（需檢查餘額）
-- 'TF'：轉帳處理
-- 其他：顯示錯誤訊息
 
 ---
 
-## 重點回顧
+## 五、BA 閱讀指南
 
-| 語法 | 用途 | 範例 |
+### 5.1 程式邏輯追蹤技巧
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              BA 程式邏輯追蹤技巧                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Step 1: 找到主程序入口                                         │
+│  ─────────────────────────                                      │
+│  • 通常是最上面的段落 (0000-MAIN 或 MAIN-PARA)                 │
+│  • 追蹤 PERFORM 的執行順序                                      │
+│                                                                 │
+│  Step 2: 理解程式架構                                           │
+│  ─────────────────────                                          │
+│  • INITIALIZE → PROCESS → TERMINATE                            │
+│  • 識別主迴圈位置                                               │
+│  • 標記重要副程式                                               │
+│                                                                 │
+│  Step 3: 追蹤條件判斷                                           │
+│  ─────────────────────                                          │
+│  • 標記 IF/EVALUATE 的條件與分支                                │
+│  • 注意巢狀條件的層級                                           │
+│  • 記錄業務規則                                                 │
+│                                                                 │
+│  Step 4: 識別關鍵計算                                           │
+│  ─────────────────────                                          │
+│  • 標記 COMPUTE/ADD/SUBTRACT 等計算                             │
+│  • 記錄計算公式                                                 │
+│  • 注意精度處理                                                 │
+│                                                                 │
+│  Step 5: 記錄檔案操作                                           │
+│  ─────────────────────                                          │
+│  • 標記 READ/WRITE/REWRITE 位置                                 │
+│  • 追蹤資料流向                                                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 常見邏輯陷阱
+
+| 陷阱 | 說明 | 範例 |
 |------|------|------|
-| IF | 條件判斷 | `IF A > B ... END-IF` |
-| EVALUATE | 多重選擇 | `EVALUATE X WHEN 'A' ... END-EVALUATE` |
-| PERFORM | 呼叫段落 | `PERFORM 1000-INIT` |
-| PERFORM UNTIL | 條件迴圈 | `PERFORM P UNTIL EOF` |
-| PERFORM n TIMES | 計次迴圈 | `PERFORM P 10 TIMES` |
-| PERFORM VARYING | 迭代迴圈 | `PERFORM VARYING I FROM 1 BY 1...` |
+| **遺漏 END-IF** | 舊版 COBOL 可能沒有結束標記 | 使用句點結束，容易出錯 |
+| **PERFORM 無限迴圈** | 忘記更新終止條件 | UNTIL 條件永遠不成立 |
+| **巢狀過深** | IF 巢狀超過 3-4 層 | 難以閱讀和維護 |
+| **ELSE 遺漏** | 沒有處理其他情況 | 邏輯不完整 |
+| **條件順序錯誤** | 範圍判斷順序不當 | 大範圍在前，小範圍永遠不會執行 |
+
+---
+
+## 六、練習題
+
+### 練習 1: IF vs EVALUATE 選擇
+
+請判斷以下場景應使用 IF 還是 EVALUATE：
+
+| 場景 | 選擇 | 理由 |
+|------|------|------|
+| 檢查帳戶餘額是否大於 1000 | | |
+| 處理 5 種不同的交易類型 | | |
+| 判斷年齡是否成年 (>= 18) | | |
+| 根據成績等級給評語 (A/B/C/D/F) | | |
+
+### 練習 2: 程式邏輯設計
+
+請為以下需求設計程式邏輯：
+
+**需求**：設計一個利息計算邏輯，規則如下：
+- 儲蓄帳戶 (SAVINGS)：餘額 >= 10000 利率 2%，< 10000 利率 1%
+- 支票帳戶 (CHECKING)：一律不計息
+- 定存帳戶 (TIME)：依期限，1年 3%、2年 3.5%、3年 4%
+
+**要求**：使用適當的 IF 或 EVALUATE
+
+### 練習 3: 程式錯誤找出
+
+找出以下程式的邏輯錯誤：
+
+```cobol
+       2000-CALCULATE-FEE.
+           IF TXN-AMOUNT < 1000
+               MOVE 10 TO WS-FEE
+           ELSE IF TXN-AMOUNT < 5000
+               MOVE 20 TO WS-FEE
+           ELSE IF TXN-AMOUNT < 1000
+               MOVE 5 TO WS-FEE
+           ELSE
+               MOVE 30 TO WS-FEE
+           END-IF.
+```
+
+**問題**：
+1. 有什麼邏輯錯誤？
+2. 如何修正？
+
+---
+
+## 七、總結
+
+### 本課程重點回顧
+
+✅ **IF**: 條件判斷，適合範圍比較和複合條件
+
+✅ **EVALUATE**: 多條件分支，適合離散值判斷
+
+✅ **PERFORM**: 迴圈控制，支援多種形式
+
+✅ **程式結構**: INIT → PROCESS → TERM 標準模式
+
+✅ **BA 關注點**: 追蹤執行順序、識別業務規則、記錄計算公式
 
 ---
 
 ## 延伸閱讀
 
-- [Lesson 2-6：COPYBOOK 與程式碼複用](lesson-2-6-copybook.md)
-- [Lesson 3-1：Sequential File 與 VSAM File](lesson-3-1-file-types.md)
+- [Lesson 2-6: COPYBOOK 與程式碼複用](lesson-2-6-copybook.md)
+- [Lesson 2-4: COMP, COMP-3, Packed Decimal](lesson-2-4-comp-usage.md)
+
+---
+
+*課程版本: 1.0 | 更新日期: 2026-04-11*

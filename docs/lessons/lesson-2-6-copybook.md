@@ -1,354 +1,213 @@
-# Lesson 2-6：COPYBOOK 與程式碼複用
+# Lesson 2-6: COPYBOOK 與程式碼複用
+
+> 理解 COBOL 的程式碼共用機制
+
+---
 
 ## 學習目標
 
 - 理解 COPYBOOK 的概念與用途
-- 掌握 COPY 敘述的使用方式
-- 認識銀行常用的標準 COPYBOOK
+- 掌握 COPY 語句的使用方法
+- 能夠設計和維護 COPYBOOK
+- 了解 BA 在管理 COPYBOOK 時的關注點
 
 ---
 
-## 為什麼需要 COPYBOOK？
+## 一、COPYBOOK 基礎
 
-在銀行系統中：
-- 同一個檔案結構可能被數十支程式使用
-- 帳戶主檔的定義如果改變，需要更新所有相關程式
-- 統一的資料定義可以避免錯誤
+### 1.1 什麼是 COPYBOOK？
 
-COPYBOOK 就是為了**程式碼複用**和**標準化**而設計的。
+COPYBOOK 是 COBOL 中儲存共用程式碼片段的機制，通常用於定義共用的資料結構。多個程式可以透過 COPY 語句引用相同的 COPYBOOK，確保資料定義的一致性。
 
----
-
-## COPY 敘述
-
-### 基本語法
-
-```cobol
-       COPY copybook名稱.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              COPYBOOK 概念圖                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              COPYBOOK 檔案 (共用定義)                    │  │
+│   │  ┌─────────────────────────────────────────────────┐   │  │
+│   │  │  CUSTREC (客戶資料結構)                          │   │  │
+│   │  │  ├── CUST-ID        PIC X(10)                   │   │  │
+│   │  │  ├── CUST-NAME      PIC X(30)                   │   │  │
+│   │  │  └── CUST-PHONE     PIC X(15)                   │   │  │
+│   │  └─────────────────────────────────────────────────┘   │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              ↓                                  │
+│              ┌───────────────┼───────────────┐                  │
+│              ↓               ↓               ↓                  │
+│   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐  │
+│   │   程式 A        │ │   程式 B        │ │   程式 C        │  │
+│   │                 │ │                 │ │                 │  │
+│   │  COPY CUSTREC.  │ │  COPY CUSTREC.  │ │  COPY CUSTREC.  │  │
+│   │                 │ │                 │ │                 │  │
+│   │  (使用客戶資料) │ │  (使用客戶資料) │ │  (使用客戶資料) │  │
+│   └─────────────────┘ └─────────────────┘ └─────────────────┘  │
+│                                                                 │
+│   優點：                                                        │
+│   • 資料結構一致性                                              │
+│   • 修改一處，全體生效                                          │
+│   • 減少重複程式碼                                              │
+│   • 易於維護                                                    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 範例
+### 1.2 COPYBOOK 在銀行系統中的應用
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              銀行系統 COPYBOOK 分類                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  COPYBOOK 類型        用途                      範例            │
+│  ─────────────        ────                      ────            │
+│                                                                 │
+│  主檔結構             帳戶、客戶主檔定義        ACCTREC        │
+│  (Master Files)       多程式共用                                 │
+│                                                                 │
+│  交易結構             各類交易記錄格式          TXNREC         │
+│  (Transaction)        存款、提款、轉帳等                         │
+│                                                                 │
+│  報表結構             報表輸出格式              RPTHDDR        │
+│  (Report)           標題、明細、合計                             │
+│                                                                 │
+│  常數定義             系統常數、代碼定義        CONSTANTS      │
+│  (Constants)        利率、費用、狀態碼                          │
+│                                                                 │
+│  介面結構             系統間資料交換格式        INTERFACE      │
+│  (Interface)        MQ、Socket 訊息格式                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 二、COPY 語句語法
+
+### 2.1 基本語法
 
 ```cobol
+       *---- COPY 語句基本形式 ------------------------------------
+       
+       * 基本形式
+       COPY copybook-name.
+       
+       * 指定替換文字 (REPLACING)
+       COPY copybook-name
+           REPLACING ==old-text== BY ==new-text==.
+       
+       * 多重替換
+       COPY copybook-name
+           REPLACING ==old-1== BY ==new-1==
+                     ==old-2== BY ==new-2==.
+       
+       * 在特定區段使用
+       COPY copybook-name IN/OF library-name.
+```
+
+### 2.2 使用範例
+
+```cobol
+       *---- COPY 使用範例 ----------------------------------------
+       
        DATA DIVISION.
+       
+       * FILE SECTION 中引用檔案結構
        FILE SECTION.
-
-       COPY ACCTREC.              *> 複製帳戶記錄結構
-
+       FD  ACCOUNT-FILE.
+       COPY ACCTREC.                    *> 引用帳戶結構 COPYBOOK
+       
+       * WORKING-STORAGE 中引用常數
        WORKING-STORAGE SECTION.
-
-       COPY WSACCT.               *> 複製工作變數定義
-       COPY WSERROR.              *> 複製錯誤處理變數
+       COPY CONSTANTS.                  *> 引用常數定義
+       
+       * LINKAGE SECTION 中引用介面結構
+       LINKAGE SECTION.
+       COPY ACCTINQ.                    *> 引用查詢介面結構
+       
+       * 使用 REPLACING 進行欄位名稱調整
+       FD  HISTORY-FILE.
+       COPY ACCTREC
+           REPLACING ==ACCT-== BY ==HIST-ACCT-==.
+       
+       * 結果：ACCT-NUMBER 變成 HIST-ACCT-NUMBER
 ```
 
 ---
 
-## COPYBOOK 檔案
+## 三、COPYBOOK 設計
 
-COPYBOOK 是獨立的原始碼檔案，通常存放在指定的程式庫（PDS Library）中。
-
-### 範例：ACCTREC.cpy
+### 3.1 標準 COPYBOOK 結構
 
 ```cobol
-      *=======================================================
-      * COPYBOOK: ACCTREC
-      * 用途:    帳戶主檔記錄結構
-      * 作者:    SYSTEM TEAM
-      * 更新日期: 2026-01-15
-      *=======================================================
-       01 ACCT-RECORD.
-          05 ACCT-NO           PIC X(16).
-          05 ACCT-TYPE         PIC XX.
-          05 ACCT-NAME         PIC X(40).
-          05 ACCT-STATUS       PIC X.
-             88 ACCT-ACTIVE    VALUE 'A'.
-             88 ACCT-DORMANT   VALUE 'D'.
-             88 ACCT-CLOSED    VALUE 'C'.
-          05 OPEN-DATE         PIC 9(8).
-          05 CURR-CODE         PIC XXX.
-          05 ACCT-BALANCE      PIC S9(11)V99 COMP-3.
-          05 HOLD-AMT          PIC S9(9)V99 COMP-3.
-          05 AVAIL-BAL         PIC S9(11)V99 COMP-3.
-          05 INT-RATE          PIC V9(6) COMP-3.
-          05 LAST-TRX-DATE     PIC 9(8).
-          05 FILLER            PIC X(20).
+       *=============================================================
+       * COPYBOOK: ACCTREC
+       * 用途: 帳戶主檔資料結構
+       * 建立日期: 2026-04-01
+       * 最後修改: 2026-04-11
+       * 修改者: JOHN DOE
+       * 版本: 1.2
+       *=============================================================
+       
+       01  ACCOUNT-RECORD.
+           05  ACCT-KEY.
+               10  ACCT-NUMBER        PIC X(12).
+               10  ACCT-BRANCH        PIC X(4).
+           
+           05  ACCT-INFO.
+               10  ACCT-TYPE          PIC X.
+                   88  ACCT-CHECKING   VALUE 'C'.
+                   88  ACCT-SAVINGS    VALUE 'S'.
+                   88  ACCT-TIME-DEP   VALUE 'T'.
+               10  ACCT-CURRENCY      PIC X(3).
+               10  ACCT-STATUS        PIC X.
+                   88  ACCT-ACTIVE     VALUE 'A'.
+                   88  ACCT-CLOSED     VALUE 'C'.
+                   88  ACCT-FROZEN     VALUE 'F'.
+           
+           05  ACCT-BALANCE-INFO.
+               10  ACCT-CURR-BAL      PIC S9(13)V99 COMP-3.
+               10  ACCT-AVAIL-BAL     PIC S9(13)V99 COMP-3.
+               10  ACCT-HOLD-AMT      PIC S9(13)V99 COMP-3.
+           
+           05  ACCT-CUSTOMER-INFO.
+               10  ACCT-CUST-ID       PIC X(10).
+               10  ACCT-CUST-NAME     PIC X(40).
+           
+           05  ACCT-AUDIT-INFO.
+               10  ACCT-OPEN-DATE     PIC 9(8).
+               10  ACCT-UPDATE-DATE   PIC 9(8).
+               10  ACCT-UPDATE-BY     PIC X(8).
+       
+       *=============================================================
+       * 修改歷史:
+       * v1.2 (2026-04-11): 新增 ACCT-UPDATE-BY 欄位
+       * v1.1 (2026-03-15): 新增 ACCT-HOLD-AMT 欄位
+       * v1.0 (2026-01-01): 初始版本
+       *=============================================================
 ```
 
----
-
-## COPYBOOK 的優點
-
-| 優點 | 說明 |
-|------|------|
-| **標準化** | 所有程式使用相同的資料定義 |
-| **維護性** | 修改一處，所有程式自動更新 |
-| **可讀性** | 主程式更簡潔，結構更清晰 |
-| **一致性** | 避免不同程式定義不一致的問題 |
-
----
-
-## REPLACING 選項
-
-當需要複製 COPYBOOK 但修改某些名稱時使用。
-
-### 語法
+### 3.2 常數定義 COPYBOOK
 
 ```cobol
-       COPY copybook名稱 REPLACING ==原名== BY ==新名==.
-```
-
-### 範例
-
-```cobol
-       COPY ACCTREC REPLACING ==ACCT-== BY ==SRC-ACCT-==.
-
-       *> 結果：所有 ACCT- 前綴變成 SRC-ACCT-
-       *> SRC-ACCT-NO, SRC-ACCT-TYPE, ...
-```
-
-### 實際應用
-
-當同一支程式需要兩份相同結構但不同名稱的記錄：
-
-```cobol
-       DATA DIVISION.
-       WORKING-STORAGE SECTION.
-
-       COPY ACCTREC.                          *> 原始記錄
-       COPY ACCTREC REPLACING ==ACCT-== BY ==OLD-==.
-                                              *> 舊值記錄（OLD-ACCT-NO...）
-
-       *> 可以比較新舊值
-       IF ACCT-BALANCE NOT = OLD-ACCT-BALANCE
-           PERFORM LOG-BALANCE-CHANGE
-       END-IF.
-```
-
----
-
-## 銀行常用 COPYBOOK 類型
-
-### 1. 檔案記錄結構
-
-```cobol
-      * 帳戶主檔
-       COPY ACCTMSTR.
-
-      * 交易明細檔
-       COPY TRANSREC.
-
-      * 客戶主檔
-       COPY CUSTMSTR.
-```
-
-### 2. 工作變數定義
-
-```cobol
-      * 通用工作變數
-       COPY WSCOMMON.
-
-      * 日期時間變數
-       COPY WSDATE.
-
-      * 錯誤處理變數
-       COPY WSERROR.
-```
-
-### 3. 報表格式
-
-```cobol
-      * 報表標題
-       COPY RPTHEAD.
-
-      * 報表明細行
-       COPY RPTDTL.
-
-      * 報表統計行
-       COPY RPTFOOT.
-```
-
-### 4. 訊息與代碼
-
-```cobol
-      * 錯誤訊息定義
-       COPY MSGERROR.
-
-      * 系統代碼對照
-       COPY CODETABLE.
-```
-
----
-
-## 實際銀行範例
-
-### 完整程式使用 COPYBOOK
-
-```cobol
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. DAILYINT.
-
-       ENVIRONMENT DIVISION.
-       INPUT-OUTPUT SECTION.
-       FILE-CONTROL.
-           SELECT ACCT-FILE ASSIGN TO ACCTDATA
-               ORGANIZATION IS SEQUENTIAL.
-           SELECT RPT-FILE ASSIGN TO INTRPT
-               ORGANIZATION IS SEQUENTIAL.
-
-       DATA DIVISION.
-       FILE SECTION.
-       FD ACCT-FILE.
-       COPY ACCTMSTR.                    *> 帳戶記錄結構
-
-       FD RPT-FILE.
-       COPY RPTINTDT.                   *> 報表明細結構
-
-       WORKING-STORAGE SECTION.
-       COPY WSCOMMON.                   *> 通用變數
-       COPY WSDATE.                     *> 日期變數
-       COPY WSERROR.                    *> 錯誤變數
-
-       01 WS-SPECIFIC-FIELDS.           *> 程式專用變數
-          05 WS-TOTAL-INT    PIC S9(13)V99 COMP-3 VALUE 0.
-          05 WS-PROC-CNT     PIC 9(8) COMP VALUE 0.
-
-       PROCEDURE DIVISION.
-       0000-MAIN.
-           PERFORM 1000-INIT
-           PERFORM 2000-PROCESS UNTIL EOF-REACHED
-           PERFORM 3000-TERM
-           STOP RUN.
-```
-
----
-
-## COPYBOOK 管理最佳實務
-
-### 命名規範
-
-| 類型 | 命名規範 | 範例 |
-|------|----------|------|
-| 檔案記錄 | 實體名稱 + REC | ACCTREC, TRANSREC |
-| 主檔記錄 | 實體名稱 + MSTR | ACCTMSTR, CUSTMSTR |
-| 工作變數 | WS + 功能 | WSCOMMON, WSDATE |
-| 報表結構 | RPT + 功能 | RPTHEAD, RPTDTL |
-
-### 版本控制
-
-```
-COPYBOOK 程式庫結構：
-PROD.COPYLIB        <- 生產版本
-TEST.COPYLIB        <- 測試版本
-DEV.COPYLIB         <- 開發版本
-```
-
-### 變更管理
-
-1. **變更申請**：提出 COPYBOOK 變更需求
-2. **影響分析**：評估所有使用該 COPYBOOK 的程式
-3. **變更實施**：更新 COPYBOOK
-4. **程式重編**：重新編譯所有相關程式
-5. **整合測試**：確保變更不會造成問題
-
----
-
-## BA 實務應用
-
-### 如何識別 COPYBOOK 的影響？
-
-1. **查看程式碼中的 COPY 敘述**
-2. **查詢 COPYBOOK 內容**
-3. **找出所有使用該 COPYBOOK 的程式**
-
-### 影響分析範例
-
-**情境：帳戶主檔新增「手機號號碼」欄位**
-
-1. **修改 COPYBOOK**：
-   - 更新 ACCTMSTR.cpy，新增 ACCT-MOBILE 欄位
-
-2. **影響範圍**：
-   - 所有使用 `COPY ACCTMSTR` 的程式
-   - 檔案長度改變
-   - 相關報表格式
-
-3. **所需動作**：
-   - 重新編譯所有相關程式
-   - 修改報表 COPYBOOK
-   - 安排檔案轉換
-
-### 需求訪談時的問題
-
-| 看到的 COPYBOOK | 可以問的問題 |
-|-----------------|-------------|
-| ACCTMSTR | 「這個帳戶結構多少程式在用？」 |
-| WSCOMMON | 「這些通用變數有標準用途嗎？」 |
-| 多個 COPY | 「這些 COPYBOOK 之間有依賴關係嗎？」 |
-
----
-
-## 常見問題
-
-### 問題 1：COPYBOOK 找不到
-
-```
-IGYDS1082-E  "ACCTREC" was not found in the library.
-```
-
-**解決**：確認 COPYBOOK 所在的程式庫路徑是否正確。
-
-### 問題 2：名稱衝突
-
-```cobol
-       COPY ACCTREC.           *> 定義了 ACCT-NO
-       COPY TRANSREC.          *> 也定義了 ACCT-NO
-
-       *> 重複定義錯誤！
-```
-
-**解決**：使用 REPLACING 更名。
-
-### 問題 3：COPYBOOK 版本不一致
-
-**解決**：確保開發、測試、生產環境使用相同的 COPYBOOK 版本。
-
----
-
-## 練習題
-
-### 題目 1
-以下 COPY 敘述會產生什麼效果？
-
-```cobol
-       COPY ACCTREC REPLACING ==ACCT-== BY ==NEW-==.
-```
-
-### 題目 2
-為什麼銀行系統偏好使用 COPYBOOK 而非直接在程式中定義資料結構？
-
-### 題目 3
-設計一個客戶主檔的 COPYBOOK（CUSTMSTR.cpy），包含：
-- 客戶編號
-- 客戶姓名
-- 身分證字號
-- 出生日期
-- 聯絡電話
-- 地址
-
----
-
-## 重點回顧
-
-| 概念 | 說明 |
-|------|------|
-| COPY 敘述 | 將 COPYBOOK 內容插入程式 |
-| COPYBOOK | 可重複使用的程式碼片段 |
-| REPLACING | 複製時替換名稱 |
-| 標準化 | 所有程式使用一致的資料定義 |
-
----
-
-## 延伸閱讀
-
-- [Lesson 2-7：呼叫外部程式 (CALL)](lesson-2-7-call-statement.md)
-- [Lesson 3-1：Sequential File 與 VSAM File](lesson-3-1-file-types.md)
+       *=============================================================
+       * COPYBOOK: CONSTANTS
+       * 用途: 系統常數定義
+       *=============================================================
+       
+       *---- 系統限制常數 -------------------------------------------
+       01  CONST-SYSTEM-LIMITS.
+           05  CONST-MAX-RECORDS      PIC 9(9) VALUE 999999999.
+           05  CONST-MAX-ACCT-BAL     PIC 9(13)V99 
+                                       VALUE 9999999999999.99.
+           05  CONST-MAX-TXN-AMT      PIC 9(11)V99 
+                                       VALUE 99999999999.99.
+       
+       *---- 利率常數 -----------------------------------------------
+       01  CONST-INTEREST-RATES.
+           05  CONST-RATE-SAVINGS     PIC 9V9(4) COMP-3 
+                                       VALUE 2.5000.
+           05  CONST-RATE-CHECKING    PIC 9V9(4) COMP-3 
+                                       VALUE 0.0000.
+           05  CONST-RATE-TIME-1Y     PIC 9V9(4) COMP-
