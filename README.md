@@ -72,14 +72,14 @@
 - [x] Lesson 6-4：CLM 多貨幣處理 (MCN) ✅
 - [x] Lesson 6-5：CLM 監管報表生成 ✅
 
-### 第 7 階段：實戰演練
-- [ ] 真實程式碼解讀練習
-- [ ] 模擬需求會議
-- [ ] 缺陷分析練習
+### 第 7 階段：實戰演練 ✅
+- [x] Lesson 7-1：真實程式碼解讀練習 ✅
+- [x] Lesson 7-2：模擬需求會議 ✅
+- [x] Lesson 7-3：缺陷分析練習 ✅
 
-### 第 8 階段：工具與環境 🔜
-- [ ] Lesson 8-1：常用工具介紹（TSO/ISPF、File-Aid、Coolgen）
-- [ ] Lesson 8-2：日誌與除錯概念（SYSLOG、系統 dump）
+### 第 8 階段：工具與環境 ✅
+- [x] Lesson 8-1：常用工具介紹（TSO/ISPF、File-Aid、Coolgen）✅
+- [x] Lesson 8-2：日誌與除錯概念（SYSLOG、系統 dump）✅
 
 ## 目錄結構
 

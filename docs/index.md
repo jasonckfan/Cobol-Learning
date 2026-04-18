@@ -308,22 +308,51 @@
 
 ---
 
-### 第 7 階段：實戰演練
+### 第 7 階段：實戰演練 ✅
 
-| 課程 | 狀態 | 說明 |
-|------|:----:|------|
-| 真實程式碼解讀練習 | ⬜ | 實際案例分析 |
-| 模擬需求會議 | ⬜ | 角色扮演練習 |
-| 缺陷分析練習 | ⬜ | 問題排查訓練 |
+#### [Lesson 7-1：真實程式碼解讀練習](lessons/lesson-7-1-code-reading.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [程式閱讀五步法](lessons/lesson-7-1-code-reading.md#) | 系統性閱讀方法 |
+| [利息計算程式分析](lessons/lesson-7-1-code-reading.md#) | 實際案例解讀 |
+| [交易驗證程式分析](lessons/lesson-7-1-code-reading.md#) | 邏輯追蹤練習 |
+
+#### [Lesson 7-2：模擬需求會議](lessons/lesson-7-2-requirement-workshop.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [需求訪談基礎](lessons/lesson-7-2-requirement-workshop.md#) | 訪談流程與技巧 |
+| [模擬對話案例](lessons/lesson-7-2-requirement-workshop.md#) | 階梯式利率需求 |
+
+#### [Lesson 7-3：缺陷分析練習](lessons/lesson-7-3-defect-analysis.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [缺陷分析流程](lessons/lesson-7-3-defect-analysis.md#) | 問題排查五步法 |
+| [常見缺陷類型](lessons/lesson-7-3-defect-analysis.md#) | 資料、檔案、邏輯錯誤 |
+| [案例分析](lessons/lesson-7-3-defect-analysis.md#) | 實際錯誤分析 |
 
 ---
 
-### 第 8 階段：工具與環境
+### 第 8 階段：工具與環境 ✅
 
-| 課程 | 狀態 | 說明 |
-|------|:----:|------|
-| Lesson 8-1：常用工具介紹 | ⬜ | TSO/ISPF、File-Aid、Coolgen |
-| Lesson 8-2：日誌與除錯概念 | ⬜ | SYSLOG、系統 dump |
+#### [Lesson 8-1：常用工具介紹](lessons/lesson-8-1-tools-intro.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [TSO/ISPF](lessons/lesson-8-1-tools-intro.md#) | 基礎操作環境 |
+| [File-Aid](lessons/lesson-8-1-tools-intro.md#) | 資料檢視工具 |
+| [版本控制工具](lessons/lesson-lesson-8-1-tools-intro.md#) | Endevor/Changeman |
+| [其他工具](lessons/lesson-8-1-tools-intro.md#) | SDSF、Coolgen |
+
+#### [Lesson 8-2：日誌與除錯概念](lessons/lesson-8-2-log-debug.md) ✅
+
+| 章節 | 內容 |
+|------|------|
+| [日誌系統](lessons/lesson-8-2-log-debug.md#) | SYSLOG、作業日誌 |
+| [ABEND 處理](lessons/lesson-8-2-log-debug.md#) | 常見 ABEND 代碼 |
+| [Dump 分析](lessons/lesson-8-2-log-debug.md#) | IPCS 基礎 |
 
 ---
 
@@ -338,12 +367,23 @@
 ## 📊 學習進度
 
 ```
-已完成：28 / 28 課程 (100%)
+已完成：33 / 33 課程 (100%)
 
 ████████████████████████████████████ 100%
 ```
 
 🎉 所有課程已完成！
+
+**課程統計：**
+- 第 1 階段：4 課
+- 第 2 階段：8 課
+- 第 3 階段：8 課
+- 第 4 階段：6 課
+- 第 5 階段：7 課
+- 第 6 階段：5 課
+- 第 7 階段：3 課
+- 第 8 階段：2 課
+- **總計：33 課**
 
 ---
 
